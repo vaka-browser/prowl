@@ -1,0 +1,11 @@
+'use strict';
+/* Preload för Krypto-sidopanelen (ui/krypto.html). Exponerar bara en säker
+ * kanal för att skicka chattmeddelanden — huvudprocessen lägger på kontonumret
+ * och pratar med Säkerkoll-API:t, så numret behöver aldrig leva i panelen. */
+const { contextBridge, ipcRenderer } = require('electron');
+contextBridge.exposeInMainWorld('krypto', {
+  chat: (messages) => ipcRenderer.invoke('krypto:chat', messages),
+  doAction: (a) => ipcRenderer.send('krypto:action', a),
+  expand: (full) => ipcRenderer.send('krypto:expand', !!full),
+  onPrefill: (cb) => ipcRenderer.on('krypto-prefill', (_e, t) => cb(t)),
+});

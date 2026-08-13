@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dist-installer/
+*.AppImage
+*.exe
+*.zip
+*.dmg
+*.log
+.DS_Store

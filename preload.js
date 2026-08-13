@@ -1,0 +1,108 @@
+'use strict';
+const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('skoll', {
+  checkUrl: (url) => ipcRenderer.invoke('skoll:check-url', url),
+  dailyImage: () => ipcRenderer.invoke('skoll:daily-image'),
+  adblockToggle: (on) => ipcRenderer.invoke('skoll:adblock-toggle', on),
+  adblockState: () => ipcRenderer.invoke('skoll:adblock-state'),
+  onAdblockCount: (cb) => ipcRenderer.on('adblock:count', (_e, n) => cb(n)),
+  onAdblockHit: (cb) => ipcRenderer.on('adblock:hit', (_e, type) => cb(type)),
+});
+
+contextBridge.exposeInMainWorld('auth', {
+  login: (email, password) => ipcRenderer.invoke('auth:login', { email, password }),
+  signup: (email, password, name) => ipcRenderer.invoke('auth:signup', { email, password, name }),
+  verifyCode: (email, code) => ipcRenderer.invoke('auth:verify-code', { email, code }),
+  resetRequest: (email) => ipcRenderer.invoke('auth:reset-request', { email }),
+  resetConfirm: (email, code, password) => ipcRenderer.invoke('auth:reset-confirm', { email, code, password }),
+  session: (token) => ipcRenderer.invoke('auth:session', { token }),
+  logout: (token) => ipcRenderer.invoke('auth:logout', { token }),
+});
+
+contextBridge.exposeInMainWorld('net', {
+  toggle: (open) => ipcRenderer.send('net:toggle', !!open),
+  clear: () => ipcRenderer.send('net:clear'),
+  detail: (id) => ipcRenderer.invoke('net:detail', id),
+  onRow: (cb) => ipcRenderer.on('net-row', (_e, r) => cb(r)),
+});
+
+contextBridge.exposeInMainWorld('tor', {
+  state: () => ipcRenderer.invoke('tor:state'),
+  onState: (cb) => ipcRenderer.on('tor-state', (_e, s) => cb(s)),
+});
+
+contextBridge.exposeInMainWorld('pw', {
+  list: () => ipcRenderer.invoke('pw:list'),
+  save: (c) => ipcRenderer.invoke('pw:save', c),
+  del: (id) => ipcRenderer.invoke('pw:delete', id),
+  onOffer: (cb) => ipcRenderer.on('pw-offer', (_e, c) => cb(c)),
+});
+contextBridge.exposeInMainWorld('wallet', {
+  list: () => ipcRenderer.invoke('wallet:list'),
+  get: (id) => ipcRenderer.invoke('wallet:get', id),
+  save: (c) => ipcRenderer.invoke('wallet:save', c),
+  del: (id) => ipcRenderer.invoke('wallet:delete', id),
+  fillNow: (id) => ipcRenderer.send('wallet:fill-now', id),
+  onOffer: (cb) => ipcRenderer.on('wallet-offer', (_e, c) => cb(c)),
+  onFillOffer: (cb) => ipcRenderer.on('wallet-fill-offer', (_e, cards) => cb(cards)),
+});
+contextBridge.exposeInMainWorld('dl', {
+  list: () => ipcRenderer.invoke('dl:list'),
+  open: (id) => ipcRenderer.send('dl:open', id),
+  folder: (id) => ipcRenderer.send('dl:folder', id),
+  removeThreat: (id) => ipcRenderer.send('dl:remove-threat', id),
+  keepAnyway: (id) => ipcRenderer.send('dl:keep-anyway', id),
+  onUpdate: (cb) => ipcRenderer.on('download-update', (_e, r) => cb(r)),
+  onThreat: (cb) => ipcRenderer.on('download-threat', (_e, t) => cb(t)),
+});
+
+contextBridge.exposeInMainWorld('view', {
+  load: (id, url) => ipcRenderer.send('view:load', id, url),
+  show: (id) => ipcRenderer.send('view:show', id),
+  hide: () => ipcRenderer.send('view:hide'),
+  bounds: (r) => ipcRenderer.send('view:bounds', r),
+  insetTop: (px) => ipcRenderer.send('view:inset-top', px),
+  insetLeft: (px) => ipcRenderer.send('view:inset-left', px),
+  zoom: (id, dir) => ipcRenderer.send('view:zoom', id, dir),
+  defaultZoom: (f) => ipcRenderer.send('view:default-zoom', f),
+  print: (id) => ipcRenderer.send('view:print', id),
+  openMenu: () => ipcRenderer.send('open-app-menu'),
+  markIncognito: (id) => ipcRenderer.send('view:incognito', id),
+  onNewIncognito: (cb) => ipcRenderer.on('new-incognito', () => cb()),
+  onToast: (cb) => ipcRenderer.on('toast', (_e, m) => cb(m)),
+  onOpenHistory: (cb) => ipcRenderer.on('open-history', () => cb()),
+  onOpenBookmarks: (cb) => ipcRenderer.on('open-bookmarks', () => cb()),
+  onOpenDownloads: (cb) => ipcRenderer.on('open-downloads', () => cb()),
+  onOpenPasswords: (cb) => ipcRenderer.on('open-passwords', () => cb()),
+  onKryptoSet: (cb) => ipcRenderer.on('krypto-set', (_e, a) => cb(a)),
+  onOpenSettings: (cb) => ipcRenderer.on('open-settings', (_e, cat) => cb(cat)),
+  onClearData: (cb) => ipcRenderer.on('clear-data', () => cb()),
+  onMenuZoom: (cb) => ipcRenderer.on('menu-zoom', (_e, d) => cb(d)),
+  onMenuPrint: (cb) => ipcRenderer.on('menu-print', () => cb()),
+  onCloseTab: (cb) => ipcRenderer.on('close-tab', () => cb()),
+  onConfirmClose: (cb) => ipcRenderer.on('confirm-close', () => cb()),
+  doClose: () => ipcRenderer.send('win:do-close'),
+  openCloseConfirm: (n) => ipcRenderer.send('open-close-confirm', n),
+  onPersistSkipClose: (cb) => ipcRenderer.on('persist-skip-close', () => cb()),
+  onFocusAddress: (cb) => ipcRenderer.on('focus-address', () => cb()),
+  back: (id) => ipcRenderer.send('view:back', id),
+  forward: (id) => ipcRenderer.send('view:forward', id),
+  reload: (id) => ipcRenderer.send('view:reload', id),
+  stop: (id) => ipcRenderer.send('view:stop', id),
+  destroy: (id) => ipcRenderer.send('view:destroy', id),
+  kryptoToggle: (open, mode, account) => ipcRenderer.send('krypto:toggle', open, mode, account),
+  kryptoPrefill: (text) => ipcRenderer.send('krypto:prefill', text),
+  onOpenLogin: (cb) => ipcRenderer.on('open-login', () => cb()),
+  onKryptoRecheck: (cb) => ipcRenderer.on('krypto-recheck', () => cb()),
+  onLinkNavigate: (cb) => ipcRenderer.on('link-navigate', (_e, id, url) => cb(id, url)),
+  onDidNavigate: (cb) => ipcRenderer.on('did-navigate', (_e, id, url, b, f) => cb(id, url, b, f)),
+  onTitle: (cb) => ipcRenderer.on('title', (_e, id, t) => cb(id, t)),
+  onFavicon: (cb) => ipcRenderer.on('favicon', (_e, id, f) => cb(id, f)),
+  onLoading: (cb) => ipcRenderer.on('loading', (_e, id, l) => cb(id, l)),
+  onOpenNewTab: (cb) => ipcRenderer.on('open-new-tab', (_e, url) => cb(url)),
+  onOpenTabRaw: (cb) => ipcRenderer.on('open-tab-raw', (_e, url) => cb(url)),
+  onShowQR: (cb) => ipcRenderer.on('show-qr', (_e, url, dataUrl) => cb(url, dataUrl)),
+  onContentWarning: (cb) => ipcRenderer.on('content-warning', (_e, id, url, res) => cb(id, url, res)),
+  onWindowResized: (cb) => ipcRenderer.on('window-resized', () => cb()),
+});

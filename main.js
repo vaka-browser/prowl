@@ -1135,6 +1135,7 @@ function startAutoUpdate() {
     autoUpdater.on('update-downloaded', (info) => {
       log('downloaded ' + (info && info.version));
       broadcast('toast', 'Prowl ' + ((info && info.version) || '') + ' är hämtad — uppdateras nästa gång du startar om.');
+      broadcast('update-ready', (info && info.version) || '');
     });
     autoUpdater.on('error', (e) => log('error ' + (e && e.message)));
     const check = () => { try { autoUpdater.checkForUpdates().catch(() => {}); } catch {} };
@@ -1142,5 +1143,6 @@ function startAutoUpdate() {
     setInterval(check, 6 * 60 * 60 * 1000);
   } catch {}
 }
+ipcMain.on('update:install', () => { try { if (autoUpdater) autoUpdater.quitAndInstall(false, true); } catch {} });
 app.on('will-quit', () => { if (torProc) { try { torProc.kill(); } catch {} } });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });

@@ -962,6 +962,18 @@ function showToast(msg) {
 }
 $('menu-btn').addEventListener('click', () => window.view.openMenu());
 window.view.onToast((m) => showToast(m));
+window.view.onUpdateReady((v) => showUpdateBanner(v));
+function showUpdateBanner(version) {
+  if (document.getElementById('update-banner')) return;
+  const bar = document.createElement('div'); bar.id = 'update-banner';
+  bar.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:300;display:flex;align-items:center;gap:12px;background:var(--color-navy-900);color:#fff;padding:11px 14px 11px 18px;border-radius:14px;box-shadow:0 14px 40px rgba(8,20,35,.45);font-size:13.5px;max-width:92vw;';
+  bar.innerHTML = '<span>\u2728 En ny version av <b>Prowl</b>' + (version ? ' (' + version + ')' : '') + ' \u00e4r klar.</span>'
+    + '<button id="upd-now" style="background:#fff;color:var(--color-navy-900);border:0;border-radius:9px;padding:8px 14px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;">Starta om &amp; uppdatera</button>'
+    + '<button id="upd-later" style="background:none;border:0;color:rgba(255,255,255,.7);font-size:13px;cursor:pointer;">Senare</button>';
+  document.body.appendChild(bar);
+  bar.querySelector('#upd-now').addEventListener('click', () => { bar.querySelector('#upd-now').textContent = 'Startar om\u2026'; try { window.view.installUpdate(); } catch {} });
+  bar.querySelector('#upd-later').addEventListener('click', () => bar.remove());
+}
 window.view.onOpenSettings((cat) => { openSettings(); if (cat) showSettingsCat(cat); });
 window.view.onMenuZoom((dir) => { if (active && active.url) window.view.zoom(active.id, dir); });
 window.view.onMenuPrint(() => { if (active && active.url) window.view.print(active.id); });

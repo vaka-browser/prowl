@@ -90,6 +90,8 @@ contextBridge.exposeInMainWorld('view', {
   markIncognito: (id) => ipcRenderer.send('view:incognito', id),
   onNewIncognito: (cb) => ipcRenderer.on('new-incognito', () => cb()),
   onToast: (cb) => ipcRenderer.on('toast', (_e, m) => cb(m)),
+  onUpdateReady: (cb) => ipcRenderer.on('update-ready', (_e, v) => cb(v)),
+  installUpdate: () => ipcRenderer.send('update:install'),
   onOpenHistory: (cb) => ipcRenderer.on('open-history', () => cb()),
   onOpenBookmarks: (cb) => ipcRenderer.on('open-bookmarks', () => cb()),
   onOpenDownloads: (cb) => ipcRenderer.on('open-downloads', () => cb()),

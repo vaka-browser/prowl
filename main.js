@@ -9,6 +9,7 @@
  * routas till rätt fönster via `event.sender`.
  */
 const { app, BrowserWindow, WebContentsView, ipcMain, session, Menu, clipboard, dialog, shell, safeStorage } = require('electron');
+app.setName('Prowl');  // egen datamapp, skild från Vaka
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -681,6 +682,7 @@ ipcMain.on('open-close-confirm', (e, count) => {
   const cb = parent.getContentBounds();
   const w = 372, h = 210;
   const cw = new BrowserWindow({
+    icon: path.join(__dirname, 'build', 'icon.png'),
     parent, frame: false, transparent: true, backgroundColor: '#00000000',
     resizable: false, movable: false, minimizable: false, maximizable: false,
     skipTaskbar: true, hasShadow: false, width: w, height: h,
@@ -944,6 +946,7 @@ app.on('web-contents-created', (_e, wc) => {
 /* ────────── Fönster ────────── */
 function createWindow(incognito) {
   const win = new BrowserWindow({
+    icon: path.join(__dirname, 'build', 'icon.png'),
     width: 1280, height: 820, minWidth: 900, minHeight: 600,
     backgroundColor: incognito ? '#0a0512' : '#0e2a47',
     title: incognito ? 'Prowl – Inkognito' : 'Prowl',
@@ -1009,7 +1012,7 @@ function semverGt(a, b) {
 function checkMacUpdate() {
   const f = globalThis.fetch;
   if (!f) return;
-  const ping = () => f('https://api.github.com/repos/northcrafto/vaka-dl/releases/latest', { headers: { 'User-Agent': 'Vaka' } })
+  const ping = () => f('https://api.github.com/repos/northcrafto/prowl-dl/releases/latest', { headers: { 'User-Agent': 'Prowl' } })
     .then((r) => r.json())
     .then((j) => {
       const latest = ((j && j.tag_name) || '').replace(/^v/, '');

@@ -1,11 +1,11 @@
 {
-  "name": "sakerkoll-browser",
+  "name": "prowl",
   "version": "0.2.8",
-  "description": "Vaka – trygg svensk webbläsare (demo)",
+  "description": "Prowl – hackerutgåvan av den svenska webbläsaren",
   "main": "main.js",
   "scripts": {
     "start": "electron . --no-sandbox",
-    "build:mac": "electron-packager . \"Vaka\" --platform=darwin --arch=x64 --out=dist --overwrite --app-bundle-id=se.vaka.browser --ignore=\"(dist|/\\.git|meta_test\\.js|scan_test\\.js|.*\\.md)\"",
+    "build:mac": "electron-packager . \"Prowl\" --platform=darwin --arch=x64 --out=dist --overwrite --app-bundle-id=se.prowl.browser --ignore=\"(dist|/\\.git|meta_test\\.js|scan_test\\.js|.*\\.md)\"",
     "build:linux": "electron-builder --linux --x64",
     "build:win": "electron-builder --win --x64"
   },
@@ -25,8 +25,8 @@
     "tailwindcss": "^4.3.3"
   },
   "build": {
-    "appId": "se.vaka.browser",
-    "productName": "Vaka",
+    "appId": "se.prowl.browser",
+    "productName": "Prowl",
     "directories": {
       "output": "dist-installer",
       "buildResources": "build"
@@ -47,21 +47,21 @@
         "nsis"
       ],
       "icon": "build/icon.ico",
-      "artifactName": "Vaka-Setup.exe"
+      "artifactName": "Prowl-Setup.exe"
     },
     "linux": {
       "target": [
         "AppImage"
       ],
       "icon": "build/icon.png",
-      "artifactName": "Vaka.AppImage",
+      "artifactName": "Prowl.AppImage",
       "category": "Network"
     },
     "publish": [
       {
         "provider": "github",
         "owner": "northcrafto",
-        "repo": "vaka-dl",
+        "repo": "prowl-dl",
         "releaseType": "release"
       }
     ],
@@ -71,7 +71,7 @@
       "runAfterFinish": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Vaka",
+      "shortcutName": "Prowl",
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico"
     }

@@ -218,6 +218,8 @@ svg { display: block; }
   .btn:active { transform: translateY(1px); }
   .btn-safe { @apply text-white; background: var(--color-navy-900); }
   .btn-safe:hover { background: var(--color-navy-800); }
+  .btn-ghost { @apply bg-white; color: var(--color-navy-900); border: 1.5px solid var(--color-line); }
+  .btn-ghost:hover { background: var(--color-paper); }
   .btn-risk { @apply bg-white; color: #9a4a4a; border: 1px solid #e2c4c4; }
   .btn-risk:hover { background: #faf2f2; }
 }

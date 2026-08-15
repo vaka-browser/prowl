@@ -620,6 +620,8 @@
             <button class="set-tab" data-cat="krypto"><svg class="ic"><use href="#i-chat" /></svg>Krypto</button>
             <button class="set-tab" data-cat="tillagg"><svg class="ic"><use href="#i-settings" /></svg>Tillägg</button>
             <button class="set-tab" data-cat="losenord"><svg class="ic"><use href="#i-key" /></svg>Autofyll &amp; lösenord</button>
+            <button class="set-tab" data-cat="konto"><svg class="ic"><use href="#i-user" /></svg>Konto</button>
+            <button class="set-tab" data-cat="vanner"><svg class="ic"><use href="#i-chat" /></svg>Vänner &amp; chatt</button>
             <button class="set-tab" data-cat="wallet"><svg class="ic"><use href="#i-card" /></svg>Prowl Wallet</button>
             <button class="set-tab" data-cat="kalender"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="2"/><path d="M16 2.5v4M8 2.5v4M3 10h18"/></svg>Prowl Calendar</button>
             <button class="set-tab" data-cat="nedladdningar"><svg class="ic"><use href="#i-download" /></svg>Nedladdningar</button>
@@ -715,11 +717,123 @@
             <div id="passwords-list"></div>
           </div>
 
+          <style>
+            .fam-in { height: 40px; border: 1px solid var(--color-line); border-radius: 10px; padding: 0 12px; font-size: 13.5px; color: var(--color-navy-900); outline: none; background: #fff; }
+            .fam-in:focus { border-color: var(--color-terra); }
+          </style>
+          <style>
+            .kn-card { display: flex; align-items: center; gap: 16px; background: var(--color-paper); border: 1px solid var(--color-line); border-radius: 18px; padding: 18px 20px; margin-bottom: 18px; }
+            .kn-avatar { width: 64px; height: 64px; border-radius: 18px; background: linear-gradient(135deg, var(--color-navy-900), #2f5f88); color: #fff; display: grid; place-items: center; font-size: 26px; font-weight: 800; flex: none; }
+            .kn-name { font-size: 18px; font-weight: 800; color: var(--color-navy-900); }
+            .kn-email { font-size: 13px; color: rgb(28 43 58 / .55); margin-top: 1px; }
+            .kn-badge { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; padding: 4px 11px; border-radius: 999px; font-size: 12px; font-weight: 800; background: color-mix(in srgb, var(--color-terra) 14%, #fff); color: var(--color-terra); }
+            .kn-rows { border: 1px solid var(--color-line); border-radius: 14px; overflow: hidden; margin-bottom: 20px; }
+            .kn-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 15px; font-size: 13.5px; }
+            .kn-row + .kn-row { border-top: 1px solid var(--color-line); }
+            .kn-row .k { color: rgb(28 43 58 / .6); } .kn-row .v { color: var(--color-navy-900); font-weight: 600; text-align: right; word-break: break-word; }
+            .kn-actions { display: flex; gap: 10px; margin-bottom: 24px; }
+            .kn-danger { border: 1px solid rgba(178,54,54,.3); border-radius: 16px; padding: 16px 18px; background: rgba(178,54,54,.035); }
+            .kn-danger-h { font-size: 14px; font-weight: 800; color: #b23636; margin-bottom: 4px; }
+            .kn-danger-p { font-size: 12.5px; color: rgb(28 43 58 / .6); line-height: 1.5; margin-bottom: 12px; max-width: 460px; }
+            .kn-del-btn { height: 40px; padding: 0 16px; border-radius: 11px; border: 1px solid rgba(178,54,54,.4); background: #fff; color: #b23636; font-weight: 700; font-size: 13px; cursor: pointer; }
+            .kn-del-btn:hover { background: #b23636; color: #fff; border-color: #b23636; }
+            .kn-avatar img { width: 100%; height: 100%; object-fit: cover; }
+            .kn-uedit { margin-bottom: 18px; }
+            .kn-lbl { display: block; font-size: 12px; font-weight: 700; color: rgb(28 43 58 / .7); margin-bottom: 6px; }
+            .kn-uwrap { display: flex; align-items: center; height: 42px; border: 1px solid var(--color-line); border-radius: 11px; overflow: hidden; background: #fff; }
+            .kn-at { padding: 0 2px 0 12px; color: var(--color-navy-600); font-weight: 700; }
+            .kn-uin { flex: 1; min-width: 0; border: 0; outline: none; font-size: 14px; color: var(--color-navy-900); padding: 0 6px; background: transparent; }
+            .kn-usave { height: 100%; padding: 0 16px; border: 0; border-left: 1px solid var(--color-line); background: var(--color-paper); color: var(--color-navy-900); font-weight: 700; font-size: 13px; cursor: pointer; }
+            .kn-usave:hover { background: var(--color-safe); color: #fff; }
+            .kn-msg { font-size: 12px; margin-top: 6px; min-height: 15px; }
+          </style>
+          <div class="set-panel hidden" data-cat="konto">
+            <h2 class="set-h">Konto</h2>
+            <p class="set-lead mb-4">Ditt Prowl-konto.</p>
+            <div id="kn-signedin">
+              <div class="kn-card">
+                <button class="kn-avatar" id="kn-avatar" type="button" title="Byt profilbild" style="border:0;padding:0;cursor:pointer;overflow:hidden;">?</button>
+                <div style="min-width:0;">
+                  <div class="kn-name" id="kn-name">—</div>
+                  <div class="kn-email" id="kn-email">—</div>
+                  <span class="kn-badge" id="kn-badge" style="display:none;">✦ Prowl Pro</span>
+                </div>
+              </div>
+              <input type="file" id="kn-avatar-file" accept="image/*" style="display:none;" />
+              <div class="kn-uedit">
+                <label class="kn-lbl">Användarnamn <span style="opacity:.55;font-weight:500;">– för vänner &amp; chatt</span></label>
+                <div class="kn-uwrap"><span class="kn-at">@</span><input id="kn-username" class="kn-uin" placeholder="dittnamn" maxlength="20" spellcheck="false" autocomplete="off" /><button id="kn-save-prof" class="kn-usave" type="button">Spara</button></div>
+                <div id="kn-prof-msg" class="kn-msg"></div>
+              </div>
+              <div class="kn-rows" id="kn-rows"></div>
+              <div class="kn-actions">
+                <button id="kn-logout" class="btn btn-ghost" style="height:42px;padding:0 20px;">Logga ut</button>
+              </div>
+              <div class="kn-danger" id="kn-danger">
+                <div class="kn-danger-h">Ta bort konto</div>
+                <p class="kn-danger-p">Detta raderar ditt konto permanent — Pro, sparade barn och inställningar försvinner. Det går inte att ångra.</p>
+                <button id="kn-delete" class="kn-del-btn">Ta bort mitt konto</button>
+              </div>
+            </div>
+            <div id="kn-signedout" style="display:none;text-align:center;padding:28px 10px;">
+              <p class="set-lead mb-4">Du är inte inloggad.</p>
+              <button id="kn-login" class="btn btn-safe" style="height:44px;padding:0 22px;">Logga in</button>
+            </div>
+          </div>
+
+          <style>
+            .fr-add { display: flex; gap: 8px; margin-bottom: 16px; }
+            .fr-sub { font-size: 11.5px; font-weight: 700; color: var(--color-navy-700); text-transform: uppercase; letter-spacing: .03em; margin: 14px 0 8px; }
+            .fr-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid var(--color-line); border-radius: 13px; padding: 9px 12px; margin-bottom: 8px; }
+            .fr-open { cursor: pointer; } .fr-open:hover { border-color: #2f8fd4; background: rgba(47,143,212,.04); }
+            .fr-id { display: flex; align-items: center; gap: 10px; min-width: 0; }
+            .fr-name { font-size: 14px; font-weight: 700; color: var(--color-navy-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .fr-fam { width: 38px; height: 38px; border-radius: 50%; background: #eaf3fb; display: grid; place-items: center; font-size: 19px; flex: none; }
+            .fr-go { color: var(--color-navy-600); font-size: 20px; flex: none; }
+            .fr-none { font-size: 12.5px; color: rgb(28 43 58 / .45); padding: 4px 2px; }
+            .fr-note { font-size: 13px; color: rgb(28 43 58 / .65); background: var(--color-paper); border: 1px solid var(--color-line); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; line-height: 1.5; }
+            .fr-acc { height: 32px; padding: 0 12px; border-radius: 9px; border: 0; background: var(--color-safe); color: #fff; font-weight: 700; font-size: 12.5px; cursor: pointer; }
+            .fr-dec { width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--color-line); background: #fff; color: var(--color-navy-700); cursor: pointer; }
+            .fr-chat-head { display: flex; align-items: center; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--color-line); margin-bottom: 10px; }
+            .fr-chat-head span { font-size: 15px; font-weight: 800; color: var(--color-navy-900); }
+            .fr-back { width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--color-line); background: #fff; font-size: 20px; color: var(--color-navy-900); cursor: pointer; line-height: 1; flex: none; }
+            .fr-msgs { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 4px 2px; }
+            .fr-msg { display: flex; gap: 8px; align-items: flex-end; max-width: 82%; }
+            .fr-msg.mine { align-self: flex-end; flex-direction: row-reverse; }
+            .fr-bub { background: var(--color-paper); border: 1px solid var(--color-line); border-radius: 14px; padding: 7px 12px; font-size: 13.5px; color: var(--color-navy-900); word-break: break-word; }
+            .fr-msg.mine .fr-bub { background: #2f8fd4; border-color: transparent; color: #fff; }
+            .fr-bub-name { font-size: 10.5px; font-weight: 700; opacity: .7; margin-bottom: 1px; }
+            .fr-msg.mine .fr-bub-name { display: none; }
+            .fr-send { display: flex; gap: 8px; margin-top: 10px; }
+            .fr-chat-av { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--color-line); background: #eaf3fb; display: grid; place-items: center; font-size: 17px; cursor: pointer; overflow: hidden; flex: none; padding: 0; }
+            .fr-ed { font-size: 10.5px; opacity: .6; }
+            .fr-edit-in { border: 0; background: rgba(255,255,255,.3); color: inherit; border-radius: 6px; padding: 2px 6px; outline: none; font-size: 13.5px; width: 180px; max-width: 55vw; }
+            .fr-allow { display: block; margin-top: 8px; height: 32px; padding: 0 12px; border-radius: 9px; border: 0; background: var(--color-safe); color: #fff; font-weight: 700; font-size: 12.5px; cursor: pointer; }
+            .fr-allow:hover { filter: brightness(1.05); } .fr-allow:disabled { opacity: .7; cursor: default; }
+          </style>
+          <div class="set-panel hidden" data-cat="vanner">
+            <h2 class="set-h">Vänner &amp; chatt</h2>
+            <p class="set-lead mb-4">Lägg till vänner med användarnamn och chatta – ni ses bara som era användarnamn, inga riktiga namn.</p>
+            <div id="fr-list"><div id="fr-body"></div></div>
+            <div id="fr-chat" style="display:none;flex-direction:column;height:430px;">
+              <div class="fr-chat-head"><button id="fr-back" class="fr-back" type="button">‹</button><button id="fr-chat-av" class="fr-chat-av" type="button" title="Byt chattbild">👪</button><span id="fr-chat-title">Chatt</span></div>
+              <input type="file" id="fr-chat-av-file" accept="image/*" style="display:none;">
+              <div id="fr-msgs" class="fr-msgs"></div>
+              <div class="fr-send"><input id="fr-send-in" class="fam-in" placeholder="Skriv ett meddelande…" style="flex:1;" /><button id="fr-send-btn" class="btn btn-safe flex-none" type="button" style="height:40px;padding:0 16px;">Skicka</button></div>
+            </div>
+          </div>
+
           <div class="set-panel hidden" data-cat="wallet">
             <h2 class="set-h">Prowl Wallet</h2>
             <p class="set-lead mb-2">Dina sparade kort. Prowl fyller i dem i kassan – med ett tryck.</p>
             <div class="wl-secure mb-4"><svg class="ic ic-sm"><use href="#i-lock" /></svg><span>End-to-end-krypterat på din dator. Vi kan inte se dina kort – de lämnar aldrig enheten.</span></div>
             <div id="wallet-list" class="flex flex-col gap-3"></div>
+            <div style="margin-top:20px;border-top:1px solid var(--color-line);padding-top:16px;">
+              <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;">
+                <input type="checkbox" id="wl-buy-toggle" style="margin-top:3px;width:18px;height:18px;accent-color:var(--color-safe);flex:none;">
+                <span><span style="font-weight:700;font-size:14px;color:var(--color-navy-900);">🤖 Låt Krypto handla åt mig</span><br><span style="font-size:12.5px;color:rgb(28 43 58 / .6);line-height:1.5;">Be Krypto köpa saker (t.ex. mat) med dina sparade kort. Du godkänner alltid varje köp – med en säkerhetskoll – innan betalning.</span></span>
+              </label>
+            </div>
             <button id="wallet-add-btn" class="wl-addbtn"><svg class="ic ic-sm"><use href="#i-card" /></svg>Lägg till kort</button>
           </div>
 

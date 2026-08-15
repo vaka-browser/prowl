@@ -18,6 +18,25 @@ contextBridge.exposeInMainWorld('auth', {
   resetConfirm: (email, code, password) => ipcRenderer.invoke('auth:reset-confirm', { email, code, password }),
   session: (token) => ipcRenderer.invoke('auth:session', { token }),
   logout: (token) => ipcRenderer.invoke('auth:logout', { token }),
+  deleteAccount: (token) => ipcRenderer.invoke('auth:delete', { token }),
+});
+
+contextBridge.exposeInMainWorld('social', {
+  me: (token) => ipcRenderer.invoke('social:me', { token }),
+  profile: (token, username, avatar) => ipcRenderer.invoke('social:profile', { token, username, avatar }),
+  friendRequest: (token, username) => ipcRenderer.invoke('social:friend-request', { token, username }),
+  friendRespond: (token, username, accept) => ipcRenderer.invoke('social:friend-respond', { token, username, accept }),
+  friends: (token) => ipcRenderer.invoke('social:friends', { token }),
+  messages: (token, chat, since) => ipcRenderer.invoke('social:messages', { token, chat, since }),
+  send: (token, chat, body) => ipcRenderer.invoke('social:send', { token, chat, body }),
+  edit: (token, id, body) => ipcRenderer.invoke('social:edit', { token, id, body }),
+  chatAvatar: (token, chat, avatar) => ipcRenderer.invoke('social:chatavatar', { token, chat, avatar }),
+});
+
+contextBridge.exposeInMainWorld('session', {
+  setkey: (key) => ipcRenderer.invoke('session:setkey', { key }),
+  login: (key) => ipcRenderer.invoke('session:login', { key }),
+  logout: (key) => ipcRenderer.invoke('session:logout', { key }),
 });
 
 contextBridge.exposeInMainWorld('net', {

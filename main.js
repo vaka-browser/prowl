@@ -44,6 +44,7 @@ function makeCtx(win, incognito) {
     topInset: 0, leftInset: 0, defaultZoom: 1,
     kryptoView: null, kryptoOpen: false, kryptoFull: false, vakaToken: null,
     net: null, netOpen: false,          // nätverksinspektör (Wireshark-lik, via CDP)
+    htmlFull: false, _wasFull: false,   // HTML5-video/element i helskärm
   };
 }
 function ctxFor(event) { return wins.get(event.sender.id); }
@@ -126,11 +127,17 @@ function ghosteryPreloadPath() {
   try { return require.resolve('@ghostery/adblocker-electron-preload'); } catch { return null; }
 }
 // Aktivera motorn på en session: nätverksblockering + kosmetik/scriptlet-preload (Electron 33-kompatibelt).
+// Allowlist: blockera ALDRIG anrop till inloggnings-/konto-domäner (annars kan 2FA-verifiering m.m. hänga)
+const ADBLOCK_ALLOW = /(^|\.)(github\.com|githubusercontent\.com|githubassets\.com|github\.io|accounts\.google\.com|login\.microsoftonline\.com|login\.live\.com|appleid\.apple\.com|okta\.com|auth0\.com|duosecurity\.com)$/i;
+function adblockAllowHost(url) { try { return ADBLOCK_ALLOW.test(new URL(url).hostname); } catch { return false; } }
 function enableEngineOn(sess) {
   if (!engine) return;
   try {
     sess.webRequest.onHeadersReceived({ urls: ['<all_urls>'] }, (d, cb) => engine.onHeadersReceived(d, cb));
-    sess.webRequest.onBeforeRequest({ urls: ['<all_urls>'] }, (d, cb) => engine.onBeforeRequest(d, cb));
+    sess.webRequest.onBeforeRequest({ urls: ['<all_urls>'] }, (d, cb) => {
+      if (adblockAllowHost(d.url)) { cb({}); return; }   // släpp igenom GitHub/inloggnings-anrop orört
+      engine.onBeforeRequest(d, cb);
+    });
   } catch {}
   try {
     const p = ghosteryPreloadPath();
@@ -220,6 +227,12 @@ function applyBounds(ctx) {
   const kw = (ctx.kryptoOpen && !full) ? KRYPTO_W : 0;        // sidopanelens bredd (0 i helskärm – panelen ligger ovanpå)
   const nh = ctx.netOpen ? NET_H : 0;                         // nätverksinspektörens höjd (dockad längst ner)
   const R = Math.round;
+  if (ctx.htmlFull && ctx.visibleTab && ctx.views.has(ctx.visibleTab)) {   // video/element i helskärm → täck HELA fönstret
+    const cb = ctx.win.getContentBounds();
+    ctx.views.get(ctx.visibleTab).setBounds({ x: 0, y: 0, width: R(cb.width), height: R(cb.height) });
+    if (ctx.kryptoView) ctx.kryptoView.setVisible(false);
+    return;
+  }
   if (ctx.visibleTab && ctx.views.has(ctx.visibleTab)) {
     ctx.views.get(ctx.visibleTab).setBounds({ x: R(b.x + ctx.leftInset), y: R(b.y + ctx.topInset), width: R(b.width - kw - ctx.leftInset), height: R(b.height - ctx.topInset - nh) });
   }
@@ -372,6 +385,9 @@ function ensureView(ctx, tabId) {
   wc.on('did-stop-loading', () => sendTo(ctx, 'loading', tabId, false));
   wc.on('dom-ready', () => { try { if (ctx.defaultZoom !== 1) wc.setZoomFactor(ctx.defaultZoom); } catch {} });
   wc.on('context-menu', (_e, params) => { try { buildContextMenu(ctx, wc, params); } catch {} });
+  // Video/element går i helskärm (sidans egen fullscreen-knapp) → täck HELA skärmen
+  wc.on('enter-html-full-screen', () => { ctx._wasFull = ctx.win.isFullScreen(); ctx.htmlFull = true; try { ctx.win.setFullScreen(true); } catch {} applyBounds(ctx); });
+  wc.on('leave-html-full-screen', () => { ctx.htmlFull = false; try { if (!ctx._wasFull) ctx.win.setFullScreen(false); } catch {} applyBounds(ctx); });
   wc.on('did-finish-load', async () => {
     try {
       const url = wc.getURL();
@@ -418,11 +434,43 @@ ipcMain.handle('auth:reset-request', (_e, d) => vakaAuthCall('reset-request', { 
 ipcMain.handle('auth:reset-confirm', (_e, d) => vakaAuthCall('reset-confirm', { email: d && d.email, code: d && d.code, password: d && d.password }));
 ipcMain.handle('auth:session', (_e, d) => vakaAuthCall('session', { token: d && d.token }));
 ipcMain.handle('auth:logout', (_e, d) => vakaAuthCall('logout', { token: d && d.token }));
+ipcMain.handle('auth:delete', (_e, d) => vakaAuthCall('delete', { token: d && d.token }));
+/* Prowl Socialt: profil (användarnamn+bild), vänner, chatt. */
+async function socialCall(pathname, body) {
+  try {
+    const r = await fetch(SKOLL + '/api/sakerkoll/social/' + pathname, {
+      method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify(body || {}), signal: AbortSignal.timeout(20000),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok && !j.error) j.error = 'http_' + r.status;
+    return j;
+  } catch (e) { return { ok: false, error: 'unreachable', message: 'Kunde inte nå servern.' }; }
+}
+ipcMain.handle('social:me', (_e, d) => socialCall('me', { token: d && d.token }));
+ipcMain.handle('social:profile', (_e, d) => socialCall('profile', { token: d && d.token, username: d && d.username, avatar: d && d.avatar }));
+ipcMain.handle('social:friend-request', (_e, d) => socialCall('friend/request', { token: d && d.token, username: d && d.username }));
+ipcMain.handle('social:friend-respond', (_e, d) => socialCall('friend/respond', { token: d && d.token, username: d && d.username, accept: d && d.accept }));
+ipcMain.handle('social:friends', (_e, d) => socialCall('friends', { token: d && d.token }));
+ipcMain.handle('social:messages', (_e, d) => socialCall('messages', { token: d && d.token, chat: d && d.chat, since: d && d.since }));
+ipcMain.handle('social:send', (_e, d) => socialCall('send', { token: d && d.token, chat: d && d.chat, body: d && d.body }));
+ipcMain.handle('social:edit', (_e, d) => socialCall('edit', { token: d && d.token, id: d && d.id, body: d && d.body }));
+ipcMain.handle('social:chatavatar', (_e, d) => socialCall('chatavatar', { token: d && d.token, chat: d && d.chat, avatar: d && d.avatar }));
 
-/* ── Lösenord (fil-lagrat i userData, delas mellan fönster) ── */
-const PW_FILE = path.join(app.getPath('userData'), 'skoll-passwords.json');
-function loadPw() { try { return JSON.parse(fs.readFileSync(PW_FILE, 'utf8')); } catch { return []; } }
-function savePwList(l) { try { fs.writeFileSync(PW_FILE, JSON.stringify(l)); } catch {} }
+/* ── Lösenord — PER KONTO, låsta när man är utloggad ── */
+const PW_FILE = path.join(app.getPath('userData'), 'skoll-passwords.json');   // legacy (migreras in i kontot vid första inlogg)
+const PW_DIR = path.join(app.getPath('userData'), 'passwords');
+let currentAcctKey = null;                                                    // vilket Prowl-konto som är inloggat (kaka-valv + lösenord)
+function keyHash(k) { return crypto.createHash('sha1').update(String(k || '')).digest('hex'); }
+function pwFileFor(key) { return path.join(PW_DIR, 'pw-' + keyHash(key) + '.json'); }
+function loadPw() {
+  if (!currentAcctKey) return [];                                             // utloggad → lösenord låsta
+  try { return JSON.parse(fs.readFileSync(pwFileFor(currentAcctKey), 'utf8')); } catch { return []; }
+}
+function savePwList(l) {
+  if (!currentAcctKey) return;
+  try { fs.mkdirSync(PW_DIR, { recursive: true }); fs.writeFileSync(pwFileFor(currentAcctKey), JSON.stringify(l), { mode: 0o600 }); } catch {}
+}
 ipcMain.handle('pw:list', () => loadPw());
 ipcMain.handle('pw:get', (_e, origin) => loadPw().find((p) => p.origin === origin) || null);
 ipcMain.handle('pw:save', (_e, c) => {
@@ -433,7 +481,57 @@ ipcMain.handle('pw:save', (_e, c) => {
   savePwList(l); return { ok: true };
 });
 ipcMain.handle('pw:delete', (_e, id) => { savePwList(loadPw().filter((p) => p.id !== id)); return { ok: true }; });
+/* ── Kaka-valv per konto: logga ut → spara+rensa webbsession; logga in → återställ (samma tjänster tillbaka) ── */
+const COOKIE_DIR = path.join(app.getPath('userData'), 'session-cookies');
+function cookieFileFor(key) { return path.join(COOKIE_DIR, 'ck-' + keyHash(key) + '.json'); }
+async function saveAccountCookies(key) {
+  if (!key) return;
+  try {
+    const cookies = await session.defaultSession.cookies.get({});
+    fs.mkdirSync(COOKIE_DIR, { recursive: true });
+    fs.writeFileSync(cookieFileFor(key), JSON.stringify(cookies), { mode: 0o600 });
+  } catch {}
+}
+async function restoreAccountCookies(key) {
+  if (!key) return;
+  let arr = [];
+  try { arr = JSON.parse(fs.readFileSync(cookieFileFor(key), 'utf8')); } catch { return; }
+  for (const c of arr) {
+    try {
+      const host = (c.domain || '').replace(/^\./, '');
+      if (!host || !c.name) continue;
+      const set = { url: (c.secure ? 'https://' : 'http://') + host + (c.path || '/'), name: c.name, value: c.value, path: c.path || '/' };
+      if (c.domain) set.domain = c.domain;
+      if (c.secure) set.secure = true;
+      if (c.httpOnly) set.httpOnly = true;
+      if (typeof c.expirationDate === 'number') set.expirationDate = c.expirationDate;
+      if (c.sameSite) set.sameSite = c.sameSite;
+      await session.defaultSession.cookies.set(set);
+    } catch {}
+  }
+}
+async function clearWebSession() { try { await session.defaultSession.clearStorageData(); } catch {} }
+function reloadVisible(ctx) { try { if (ctx && ctx.visibleTab && ctx.views.has(ctx.visibleTab)) ctx.views.get(ctx.visibleTab).webContents.reload(); } catch {} }
+function migratePwLegacy(key) {   // första inloggningen: flytta ev. gamla (icke-konto) lösenord in i kontot
+  try { if (!fs.existsSync(pwFileFor(key)) && fs.existsSync(PW_FILE)) { fs.mkdirSync(PW_DIR, { recursive: true }); fs.copyFileSync(PW_FILE, pwFileFor(key)); } } catch {}
+}
+// Sätt inloggat konto UTAN att röra webbsessionen (vid uppstart — sessionen ligger redan kvar på disk)
+ipcMain.handle('session:setkey', (_e, d) => { currentAcctKey = (d && d.key) || null; if (currentAcctKey) migratePwLegacy(currentAcctKey); return { ok: true }; });
+// Riktig inloggning: rensa och återställ kontots webbsession
+ipcMain.handle('session:login', async (e, d) => {
+  const key = d && d.key; currentAcctKey = key || null;
+  if (key) migratePwLegacy(key);
+  await clearWebSession(); await restoreAccountCookies(key);
+  reloadVisible(ctxFor(e)); return { ok: true };
+});
+// Utloggning: spara kontots session, rensa browsern (utloggad ur Gmail m.fl.), lås lösenord
+ipcMain.handle('session:logout', async (e, d) => {
+  const key = d && d.key;
+  await saveAccountCookies(key); await clearWebSession(); currentAcctKey = null;
+  reloadVisible(ctxFor(e)); return { ok: true };
+});
 ipcMain.on('pw:capture', (e, c) => {
+  if (!currentAcctKey) return;             // utloggad → spara/erbjud inte lösenord
   if (!c || !c.password) return;
   const l = loadPw();
   if (l.find((p) => p.origin === c.origin && p.username === c.username && p.password === c.password)) return;
@@ -957,6 +1055,8 @@ function createWindow(incognito) {
   wins.set(id, ctx);
   win.loadFile(path.join(__dirname, 'ui', 'shell.html'), incognito ? { query: { incognito: '1' } } : {});
   win.on('resize', () => sendTo(ctx, 'window-resized'));
+  win.on('enter-full-screen', () => applyBounds(ctx));   // räkna om vy-bounds när övergången är klar
+  win.on('leave-full-screen', () => applyBounds(ctx));
   // Bekräfta innan man stänger ett fönster med flera flikar (Brave-likt). Skalet
   // avgör om dialogen behövs (det vet flik-antalet) och kallar win:do-close när OK.
   win.on('close', (e) => {

@@ -328,7 +328,8 @@ async function refreshPro() {
   try {
     const r = await window.auth.session(account.token);
     if (r && r.ok) { account.pro = !!r.pro; if (r.name) account.name = r.name; localStorage.setItem('skoll-account', JSON.stringify(account)); }
-    else if (r && r.error === 'no_session') { doLogout(false); return; }  // session utgången → logga ut tyst
+    // Logga ALDRIG ut automatiskt: en stängd browser ska förbli inloggad om man var inloggad.
+    // "no_session" kan vara en tillfällig serverhicka — behåll kontot lokalt tills användaren själv loggar ut.
   } catch {}
   if (pendingKryptoAfterLogin) { pendingKryptoAfterLogin = false; openKrypto(true); return; }
   if (kryptoOpen) openKrypto(true); // ladda om panelen med rätt läge
@@ -364,7 +365,7 @@ function openSettings() {
   $('tgl-krypto').checked = $('krypto-btn').style.display !== 'none';
   $('tgl-motion').checked = reduceMotion;
   renderEngines(); renderLangs(); applyZoomSeg();
-  showSettingsCat('utseende');
+  showSettingsCat(account ? 'konto' : 'utseende');
   hideOverlayElements();
   if (active) active.overlay = 'settings';
   $('settings').classList.remove('hidden');
@@ -379,6 +380,9 @@ function showSettingsCat(cat) {
   document.querySelectorAll('#settings .set-panel').forEach((p) => p.classList.toggle('hidden', p.dataset.cat !== cat));
   if (cat === 'wallet' && typeof renderWallet === 'function') renderWallet();
   if (cat === 'kalender' && typeof renderCal === 'function') renderCal();
+  if (cat === 'konto' && typeof renderKonto === 'function') renderKonto();
+  if (cat === 'vanner' && typeof renderFriends === 'function') renderFriends();
+  if (cat !== 'vanner' && typeof stopChatPoll === 'function') stopChatPoll();
 }
 function renderEngines() {
   const list = $('engine-list'); if (!list) return; list.innerHTML = '';
@@ -486,6 +490,9 @@ function applyKryptoSetting(a) {
   else if (name === 'minska_rorelse' || name === 'reduce_motion' || name === 'rorelse') { const on = kryptoOnOff(val); setReduceMotion(on); msg = 'Minska rörelse ' + (on ? 'på' : 'av'); }
   else if (name === 'sokmotor' || name === 'sok') { const k = matchEngine(val); if (k && setEngine(k)) msg = 'Sökmotor: ' + ENGINES[k].label; }
   else if (name === 'nedladdningar' || name === 'downloads') { try { openDownloads(); } catch {} msg = 'Visar nedladdningar'; }
+  else if (name === 'kop' || name === 'buy' || name === 'bestall' || name === 'betala') {
+    if (typeof startKryptoPurchase === 'function') startKryptoPurchase(val);
+  }
   if (msg && typeof showToast === 'function') showToast('⚙ ' + msg);
 }
 window.view.onKryptoSet(applyKryptoSetting);
@@ -533,16 +540,20 @@ function closeLogin() {
   $('login').classList.add('hidden');
   showActiveTab();
 }
+function accountKey(a) { a = a || account; if (!a) return null; return 'k:' + (a.email || a.name || a.token || 'user'); }
 function loginAs(token, email, pro, name) {
   account = { token, email: email || '', pro: !!pro, name: name || '' };
   localStorage.setItem('skoll-account', JSON.stringify(account));
   updateAccountBtn();
+  try { window.session.login(accountKey(account)); } catch {}   // återställ kontots webbsession + lås upp lösenord
   if (pendingKryptoAfterLogin) { pendingKryptoAfterLogin = false; openKrypto(true); }
   else if (kryptoOpen) openKrypto(true);
 }
 function doLogout(reopenKrypto) {
   const t = account && account.token;
+  const sk = account ? accountKey(account) : null;
   account = null; localStorage.removeItem('skoll-account'); updateAccountBtn();
+  if (sk) { try { window.session.logout(sk); } catch {} }   // spara + rensa webbsession (utloggad ur Gmail m.fl.) + lås lösenord
   if (t) { try { window.auth.logout(t); } catch {} }
   setLoginView('login');
   if (reopenKrypto !== false && kryptoOpen) openKrypto(true);  // lås Krypto igen
@@ -648,7 +659,17 @@ document.querySelectorAll('.pw-eye').forEach((b) => {
     b.style.opacity = inp.type === 'text' ? '1' : '0.55';
   });
 });
-$('account-btn').addEventListener('click', () => openLogin());
+$('account-btn').addEventListener('click', () => openAccount());
+$('kn-logout') && $('kn-logout').addEventListener('click', () => { doLogout(); renderKonto(); });
+$('kn-login') && $('kn-login').addEventListener('click', () => openLogin());
+$('kn-delete') && $('kn-delete').addEventListener('click', showConfirmDelete);
+$('kn-avatar') && $('kn-avatar').addEventListener('click', () => { const fl = $('kn-avatar-file'); if (fl) fl.click(); });
+$('kn-avatar-file') && $('kn-avatar-file').addEventListener('change', knHandleAvatar);
+$('kn-save-prof') && $('kn-save-prof').addEventListener('click', knSaveProfile);
+$('fr-back') && $('fr-back').addEventListener('click', closeChat);
+$('fr-send-btn') && $('fr-send-btn').addEventListener('click', socSend);
+$('fr-send-in') && $('fr-send-in').addEventListener('keydown', (e) => { if (e.key === 'Enter') socSend(); });
+$('fr-chat-av') && $('fr-chat-av').addEventListener('click', () => { if (socChat && socChat.indexOf('dm:') !== 0) return; });
 $('login-close').addEventListener('click', () => { pendingKryptoAfterLogin = false; closeLogin(); });
 $('qr-close').addEventListener('click', () => { if (active) active.overlay = null; $('qr').classList.add('hidden'); showActiveTab(); });
 $('login-email').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('login-pw').focus(); });
@@ -676,7 +697,7 @@ $('reset-confirm-back').addEventListener('click', () => setLoginView('reset'));
 $('reset-resend').addEventListener('click', doResetResend);
 $('logout-btn').addEventListener('click', () => doLogout());
 updateAccountBtn();
-if (account && account.token) refreshPro();   // synka Pro-status + validera sessionen vid uppstart
+// (session-återställning körs SIST i filen — se slutet)
 
 /* ── Startsida ── */
 function tickClock() { $('nt-clock').textContent = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' }); }
@@ -1130,6 +1151,322 @@ function walletEditForm(id) {
 }
 function openWallet() { openSettings(); showSettingsCat('wallet'); renderWallet(); }
 $('wallet-add-btn') && $('wallet-add-btn').addEventListener('click', () => { wlEditing = 'new'; renderWallet(); setTimeout(() => { const f = document.querySelector('#wallet-list .wl-in[data-f=number]'); if (f) f.focus(); }, 0); });
+$('wl-buy-toggle') && $('wl-buy-toggle').addEventListener('change', (e) => { try { localStorage.setItem('vaka-krypto-buy', e.target.checked ? '1' : '0'); } catch {} showToast(e.target.checked ? '🤖 Krypto får nu handla åt dig – du godkänner varje köp.' : 'Krypto handlar inte längre åt dig.'); });
+
+/* ═══ Konto, socialt lager (vänner & chatt) & Krypto-köp — porterat från Vaka (utan familj) ═══ */
+/* ── Kontosida (profil i Inställningar) + radera konto ── */
+function openAccount() { if (account) { openSettings(); showSettingsCat('konto'); } else { openLogin(); } }
+async function renderKonto() {
+  const si = $('kn-signedin'), so = $('kn-signedout');
+  if (!si) return;
+  if (!account) { si.style.display = 'none'; if (so) so.style.display = 'block'; return; }
+  si.style.display = 'block'; if (so) so.style.display = 'none';
+  const nm = account.name || (account.isChild ? 'Barnkonto' : (account.email ? account.email.split('@')[0] : 'Du'));
+  $('kn-avatar').innerHTML = escapeHtml((nm[0] || '?').toUpperCase());
+  $('kn-name').textContent = nm;
+  $('kn-email').textContent = account.isChild ? 'Barnkonto (loggar in med kod)' : (account.email || '');
+  $('kn-badge').style.display = account.pro ? 'inline-flex' : 'none';
+  const rows = [['Typ', account.isChild ? 'Barnkonto' : 'Vuxenkonto'], ['Status', account.pro ? 'Prowl Pro' : 'Gratis']];
+  if (account.email && !account.isChild) rows.push(['Mejl', account.email]);
+  $('kn-rows').innerHTML = rows.map((r) => '<div class="kn-row"><span class="k">' + r[0] + '</span><span class="v">' + escapeHtml(r[1]) + '</span></div>').join('');
+  const dz = $('kn-danger'); if (dz) dz.style.display = account.isChild ? 'none' : 'block';
+  const pm = $('kn-prof-msg'); if (pm) pm.textContent = '';
+  await loadSocMe();
+  if (socMe) {
+    const un = $('kn-username'); if (un) un.value = socMe.username || '';
+    if (socMe.avatar) $('kn-avatar').innerHTML = '<img src="' + socMe.avatar + '" alt="">';
+  }
+}
+function showConfirmDelete() {
+  if (!account || account.isChild || document.getElementById('kn-delmodal')) return;
+  const ov = document.createElement('div'); ov.id = 'kn-delmodal';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:200;background:rgba(5,12,22,.5);display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px);';
+  ov.innerHTML = '<div style="width:min(420px,94vw);background:#fff;border-radius:18px;padding:24px;box-shadow:0 30px 70px rgba(8,20,35,.4)">'
+    + '<div style="font-size:34px;text-align:center;margin-bottom:8px">⚠️</div>'
+    + '<div style="font-size:18px;font-weight:800;color:var(--color-navy-900);text-align:center;margin-bottom:8px">Ta bort kontot?</div>'
+    + '<p style="font-size:13.5px;color:rgb(28 43 58 / .6);text-align:center;margin-bottom:18px;line-height:1.5">Ditt konto och all data (Pro, barn, inställningar) raderas permanent. Det går inte att ångra.</p>'
+    + '<div style="display:flex;gap:9px"><button id="kn-del-cancel" class="btn btn-ghost" style="flex:1;height:44px">Avbryt</button><button id="kn-del-yes" class="kn-del-btn" style="flex:1;height:44px">Ja, ta bort</button></div></div>';
+  document.body.appendChild(ov);
+  const close = () => ov.remove();
+  ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+  ov.querySelector('#kn-del-cancel').addEventListener('click', close);
+  ov.querySelector('#kn-del-yes').addEventListener('click', async () => {
+    const btn = ov.querySelector('#kn-del-yes'); btn.disabled = true; btn.textContent = 'Tar bort…';
+    let r; try { r = await window.auth.deleteAccount(account.token); } catch { r = { ok: false }; }
+    if (!r || !r.ok) { btn.disabled = false; btn.textContent = 'Ja, ta bort'; showToast((r && r.message) || 'Kunde inte ta bort kontot.'); return; }
+    close(); doLogout(false); renderKonto(); showToast('Ditt konto är borttaget.');
+  });
+}
+/* ── Socialt: profil, vänner & chatt ── */
+let socMe = null, socChat = null, socChatName = '', socPoll = null, socLastTs = 0, socMembers = {}, socSeen = {}, socLoading = false;
+async function loadSocMe() {
+  if (!account || !account.token) { socMe = null; return null; }
+  try { const r = await window.social.me(account.token); if (r && r.ok) socMe = r; } catch {}
+  return socMe;
+}
+function socAvatar(av, name, size) {
+  const s = size || 38;
+  if (av) return '<img src="' + av + '" style="width:' + s + 'px;height:' + s + 'px;border-radius:50%;object-fit:cover;flex:none;">';
+  const init = ((name || '?')[0] || '?').toUpperCase();
+  return '<span style="width:' + s + 'px;height:' + s + 'px;border-radius:50%;background:linear-gradient(135deg,#2f5f88,#2f8fd4);color:#fff;display:grid;place-items:center;font-weight:800;font-size:' + Math.round(s * 0.42) + 'px;flex:none;">' + escapeHtml(init) + '</span>';
+}
+async function renderFriends() {
+  const wrap = $('fr-body'); if (!wrap) return;
+  if ($('fr-list')) $('fr-list').style.display = 'block';
+  if ($('fr-chat')) $('fr-chat').style.display = 'none';
+  stopChatPoll();
+  if (!account) { wrap.innerHTML = '<p class="set-lead">Logga in för att lägga till vänner och chatta.</p>'; return; }
+  await loadSocMe();
+  if (!socMe || !socMe.username) {
+    wrap.innerHTML = '<div class="fr-note">Välj ett <b>användarnamn</b> i Konto-fliken först, så kan du lägga till vänner.</div><button id="fr-go-konto" class="btn btn-safe" style="height:40px;padding:0 16px;">Gå till Konto</button>';
+    const g = $('fr-go-konto'); if (g) g.addEventListener('click', () => showSettingsCat('konto'));
+    return;
+  }
+  let data = {}; try { data = await window.social.friends(account.token); } catch {}
+  const friends = (data && data.friends) || [], incoming = (data && data.incoming) || [];
+  let html = '<div class="fr-add"><input id="fr-add-in" class="fam-in" placeholder="@användarnamn" spellcheck="false" style="flex:1;"><button id="fr-add-btn" class="btn btn-safe flex-none" style="height:40px;padding:0 14px;">Lägg till</button></div>';
+  if (incoming.length) {
+    html += '<div class="fr-sub">Vänförfrågningar</div>';
+    html += incoming.map((f) => '<div class="fr-row"><div class="fr-id">' + socAvatar(f.avatar, f.username) + '<span class="fr-name">@' + escapeHtml(f.username || '') + '</span></div><div style="display:flex;gap:6px;flex:none;"><button class="fr-acc" data-u="' + escapeHtml(f.username) + '">Acceptera</button><button class="fr-dec" data-u="' + escapeHtml(f.username) + '">×</button></div></div>').join('');
+  }
+  html += '<div class="fr-sub">Chattar</div>';
+  if (friends.length) html += friends.map((f) => '<div class="fr-row fr-open" data-chat="dm:' + escapeHtml(f.username) + '" data-name="@' + escapeHtml(f.username) + '"><div class="fr-id">' + socAvatar(f.avatar, f.username) + '<span class="fr-name">@' + escapeHtml(f.username || '') + '</span></div><span class="fr-go">›</span></div>').join('');
+  else html += '<div class="fr-none">Inga vänner än – lägg till någon med deras användarnamn.</div>';
+  wrap.innerHTML = html;
+  $('fr-add-btn').addEventListener('click', socAddFriend);
+  $('fr-add-in').addEventListener('keydown', (e) => { if (e.key === 'Enter') socAddFriend(); });
+  wrap.querySelectorAll('.fr-acc').forEach((b) => b.addEventListener('click', async () => { await window.social.friendRespond(account.token, b.dataset.u, true); renderFriends(); }));
+  wrap.querySelectorAll('.fr-dec').forEach((b) => b.addEventListener('click', async () => { await window.social.friendRespond(account.token, b.dataset.u, false); renderFriends(); }));
+  wrap.querySelectorAll('.fr-open').forEach((r) => r.addEventListener('click', () => openChat(r.dataset.chat, r.dataset.name)));
+}
+async function socAddFriend() {
+  const inp = $('fr-add-in'); if (!inp) return;
+  const un = (inp.value || '').trim().replace(/^@/, ''); if (!un) return;
+  const r = await window.social.friendRequest(account.token, un).catch(() => ({ ok: false }));
+  if (!r || !r.ok) { showToast((r && r.message) || 'Kunde inte lägga till.'); return; }
+  inp.value = '';
+  showToast(r.state === 'friends' ? 'Ni är vänner nu!' : r.state === 'sent' ? 'Vänförfrågan skickad.' : 'Förfrågan finns redan.');
+  renderFriends();
+}
+function openChat(chat, name) {
+  socChat = chat; socChatName = name || 'Chatt'; socLastTs = 0; socSeen = {}; socMembers = {};
+  $('fr-list').style.display = 'none'; $('fr-chat').style.display = 'flex';
+  $('fr-chat-title').textContent = socChatName;
+  $('fr-msgs').innerHTML = '';
+  setChatAvatar(null);
+  loadMessages();
+  stopChatPoll(); socPoll = setInterval(loadMessages, 3000);
+}
+function stopChatPoll() { if (socPoll) { clearInterval(socPoll); socPoll = null; } }
+function closeChat() { stopChatPoll(); socChat = null; renderFriends(); }
+async function loadMessages() {
+  if (!socChat || !account || socLoading) return;   // in-flight-vakt → ingen stapling vid seg uppkoppling
+  socLoading = true;
+  let r; try { r = await window.social.messages(account.token, socChat, socLastTs); } catch { socLoading = false; return; }
+  socLoading = false;
+  if (!r || !r.ok) return;
+  if (r.members) Object.assign(socMembers, r.members);   // avatarer cachas (skickas en gång per svar)
+  setChatAvatar(r.chatAvatar);
+  const box = $('fr-msgs'); if (!box) return;
+  const hidden = socHiddenSet();
+  let added = false;
+  (r.messages || []).forEach((m) => {
+    if (m.ts > socLastTs) socLastTs = m.ts;
+    if (socSeen[m.id] || hidden.has(m.id)) return;   // dedup + lokalt raderade
+    socSeen[m.id] = true; box.appendChild(msgEl(m)); added = true;
+  });
+  if (added) box.scrollTop = box.scrollHeight;
+}
+function msgEl(m) {
+  const d = document.createElement('div'); d.className = 'fr-msg' + (m.mine ? ' mine' : '');
+  d.dataset.id = m.id;
+  const av = socMembers[m.username];
+  d.innerHTML = (m.mine ? '' : socAvatar(av, m.username, 30)) + '<div class="fr-bub"><div class="fr-bub-name">@' + escapeHtml(m.username || '') + '</div>' + escapeHtml(m.body) + (m.edited ? ' <span class="fr-ed">(ändrad)</span>' : '') + '</div>';
+  const bub = d.querySelector('.fr-bub'); bub.style.cursor = 'pointer';
+  bub.addEventListener('click', (e) => { e.stopPropagation(); msgMenu(m, bub); });
+  return d;
+}
+function socHiddenSet() { try { return new Set(JSON.parse(localStorage.getItem('vaka-hidden-msgs') || '[]')); } catch { return new Set(); } }
+function hideMsgLocal(id) {
+  const s = socHiddenSet(); s.add(id);
+  try { localStorage.setItem('vaka-hidden-msgs', JSON.stringify([...s])); } catch {}
+  const el = document.querySelector('.fr-msg[data-id="' + id + '"]'); if (el) el.remove();
+}
+function setChatAvatar(chatAvatar) {
+  const el = $('fr-chat-av'); if (!el) return;
+  let av = chatAvatar;
+  if (!av && socChat && socChat.indexOf('dm:') === 0) av = socMembers[socChat.slice(3)];
+  el.innerHTML = av ? '<img src="' + av + '" style="width:100%;height:100%;object-fit:cover;">' : (socChat === 'family' ? '👪' : '@');
+  el.style.cursor = (socChat === 'family') ? 'pointer' : 'default';
+}
+function refreshChat() { const box = $('fr-msgs'); if (box) box.innerHTML = ''; socLastTs = 0; socSeen = {}; loadMessages(); }
+function closeMsgMenu() { const m = $('fr-msgmenu'); if (m) m.remove(); }
+function msgMenu(m, anchorEl) {
+  closeMsgMenu();
+  const menu = document.createElement('div'); menu.id = 'fr-msgmenu';
+  menu.style.cssText = 'position:fixed;z-index:250;background:#fff;border:1px solid var(--color-line);border-radius:12px;box-shadow:0 12px 34px rgba(8,20,35,.22);padding:5px;min-width:158px;';
+  const item = (label, danger, fn) => {
+    const b = document.createElement('button'); b.textContent = label;
+    b.style.cssText = 'display:block;width:100%;text-align:left;padding:9px 12px;border:0;background:none;border-radius:8px;font-size:13px;cursor:pointer;color:' + (danger ? '#b23636' : 'var(--color-navy-900)') + ';';
+    b.addEventListener('mouseenter', () => (b.style.background = 'var(--color-paper)'));
+    b.addEventListener('mouseleave', () => (b.style.background = 'none'));
+    b.addEventListener('click', (e) => { e.stopPropagation(); closeMsgMenu(); fn(); });
+    menu.appendChild(b);
+  };
+  item('Kopiera', false, () => { try { navigator.clipboard.writeText(m.body); } catch {} showToast('Kopierat'); });
+  if (m.mine) item('Redigera', false, () => startEdit(m));
+  item('Radera för mig', true, () => hideMsgLocal(m.id));
+  document.body.appendChild(menu);
+  const r = anchorEl.getBoundingClientRect();
+  menu.style.left = Math.max(8, Math.min(r.left, window.innerWidth - menu.offsetWidth - 8)) + 'px';
+  menu.style.top = Math.min(r.bottom + 4, window.innerHeight - menu.offsetHeight - 8) + 'px';
+  setTimeout(() => document.addEventListener('click', closeMsgMenu, { once: true }), 0);
+}
+function startEdit(m) {
+  const bub = document.querySelector('.fr-msg[data-id="' + m.id + '"] .fr-bub'); if (!bub) return;
+  bub.innerHTML = '<input class="fr-edit-in">';
+  const inp = bub.querySelector('.fr-edit-in'); inp.value = m.body; inp.focus(); inp.select();
+  let done = false;
+  const save = async () => {
+    if (done) return; done = true;
+    const nb = (inp.value || '').trim();
+    if (!nb || nb === m.body) { refreshChat(); return; }
+    const r = await window.social.edit(account.token, m.id, nb).catch(() => ({ ok: false }));
+    if (!r || !r.ok) showToast('Kunde inte redigera.');
+    refreshChat();
+  };
+  inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); else if (e.key === 'Escape') { done = true; refreshChat(); } });
+  inp.addEventListener('blur', save);
+}
+async function socSend() {
+  const inp = $('fr-send-in'); if (!inp || !socChat) return;
+  const body = (inp.value || '').trim(); if (!body) return;
+  inp.value = '';
+  const r = await window.social.send(account.token, socChat, body).catch(() => ({ ok: false }));
+  if (!r || !r.ok) { showToast('Kunde inte skicka.'); inp.value = body; return; }
+  loadMessages();
+}
+/* Profil: bild-uppladdning + användarnamn (i Konto) */
+function knResizeImage(file, size) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('read'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement('canvas'); c.width = size; c.height = size;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, size, size); // vit botten (PNG-transparens → JPEG)
+        const m = Math.min(img.width, img.height), sx = (img.width - m) / 2, sy = (img.height - m) / 2;
+        ctx.drawImage(img, sx, sy, m, m, 0, 0, size, size);
+        resolve(c.toDataURL('image/jpeg', 0.72));
+      };
+      img.onerror = () => reject(new Error('img'));
+      img.src = reader.result; // data: URL (tillåts av CSP, till skillnad från blob:)
+    };
+    reader.readAsDataURL(file);
+  });
+}
+async function knHandleAvatar(e) {
+  const file = e.target.files && e.target.files[0]; if (!file || !account) return;
+  const dataUrl = await knResizeImage(file, 96).catch(() => null);
+  e.target.value = '';
+  if (!dataUrl) { showToast('Kunde inte läsa bilden.'); return; }
+  const r = await window.social.profile(account.token, undefined, dataUrl).catch(() => ({ ok: false }));
+  if (!r || !r.ok) { showToast((r && r.message) || 'Kunde inte spara bilden.'); return; }
+  socMe = socMe || {}; socMe.avatar = dataUrl;
+  $('kn-avatar').innerHTML = '<img src="' + dataUrl + '" alt="">';
+  showToast('Profilbild uppdaterad.');
+}
+async function knSaveProfile() {
+  if (!account) return;
+  const un = ($('kn-username').value || '').trim().replace(/^@/, '');
+  const msg = $('kn-prof-msg');
+  const r = await window.social.profile(account.token, un || undefined, undefined).catch(() => ({ ok: false }));
+  if (!r || !r.ok) { if (msg) { msg.textContent = (r && r.message) || 'Kunde inte spara.'; msg.style.color = '#c25340'; } return; }
+  socMe = socMe || {}; socMe.username = r.username;
+  if (msg) { msg.textContent = 'Sparat ✓'; msg.style.color = 'var(--color-safe)'; }
+}
+
+/* ── Krypto handlar åt användaren (tillstånd + säkerhetskoll + bekräftelse) ── */
+function kbuyAllowed() { try { return localStorage.getItem('vaka-krypto-buy') === '1'; } catch { return false; } }
+function cardLabel(c) { return (c.brand || 'Kort') + ' •• ' + (c.last4 || '····'); }
+function kbuyOverlay(inner) {
+  const ov = document.createElement('div'); ov.id = 'kbuy-modal';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:210;background:rgba(5,12,22,.55);display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px);';
+  ov.innerHTML = '<div style="width:min(430px,95vw);background:#fff;border-radius:20px;padding:24px;box-shadow:0 30px 80px rgba(8,20,35,.45)">' + inner + '</div>';
+  document.body.appendChild(ov);
+  ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
+  return ov;
+}
+function startKryptoPurchase(val) {
+  if (document.getElementById('kbuy-modal')) return;
+  const p = ('' + val).split('|').map((s) => s.trim());
+  const order = { desc: p[0] || 'Köp', merchant: p[1] || 'Butik', amount: p[2] || '' };
+  if (!kbuyAllowed()) return showBuyConsent(order);
+  showBuyConfirm(order);
+}
+function showBuyConsent(order) {
+  const ov = kbuyOverlay(
+    '<div style="font-size:32px;text-align:center;margin-bottom:8px">🛍️</div>'
+    + '<div style="font-size:18px;font-weight:800;text-align:center;color:var(--color-navy-900);margin-bottom:8px">Låta Krypto handla åt dig?</div>'
+    + '<p style="font-size:13.5px;color:rgb(28 43 58 / .62);text-align:center;line-height:1.55;margin-bottom:18px">Krypto vill kunna köpa saker åt dig med dina sparade kort. Du får alltid <b>godkänna varje köp</b> innan betalning – och kan stänga av det när som helst i Prowl Wallet.</p>'
+    + '<div style="display:flex;gap:9px"><button id="kbuy-no" class="btn btn-ghost" style="flex:1;height:44px">Nej tack</button><button id="kbuy-yes" class="btn btn-safe" style="flex:1;height:44px">Tillåt</button></div>');
+  ov.querySelector('#kbuy-no').addEventListener('click', () => { ov.remove(); showToast('Krypto handlar inte utan ditt tillstånd.'); });
+  ov.querySelector('#kbuy-yes').addEventListener('click', () => { try { localStorage.setItem('vaka-krypto-buy', '1'); } catch {} const t = $('wl-buy-toggle'); if (t) t.checked = true; ov.remove(); showBuyConfirm(order); });
+}
+async function showBuyConfirm(order) {
+  let cards = []; try { cards = await window.wallet.list(); } catch {}
+  if (!cards || !cards.length) {
+    const ov = kbuyOverlay(
+      '<div style="font-size:32px;text-align:center;margin-bottom:8px">💳</div>'
+      + '<div style="font-size:17px;font-weight:800;text-align:center;color:var(--color-navy-900);margin-bottom:8px">Inget kort sparat</div>'
+      + '<p style="font-size:13.5px;color:rgb(28 43 58 / .62);text-align:center;margin-bottom:18px">Lägg till ett kort i Prowl Wallet så kan Krypto betala åt dig.</p>'
+      + '<div style="display:flex;gap:9px"><button id="kbuy-cancel" class="btn btn-ghost" style="flex:1;height:44px">Avbryt</button><button id="kbuy-wallet" class="btn btn-safe" style="flex:1;height:44px">Öppna Wallet</button></div>');
+    ov.querySelector('#kbuy-cancel').addEventListener('click', () => ov.remove());
+    ov.querySelector('#kbuy-wallet').addEventListener('click', () => { ov.remove(); openWallet(); });
+    return;
+  }
+  const opts = cards.map((c, i) => '<option value="' + i + '">' + escapeHtml(cardLabel(c)) + '</option>').join('');
+  const ov = kbuyOverlay(
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><span style="font-size:26px">🤖</span><div style="font-size:16px;font-weight:800;color:var(--color-navy-900)">Krypto vill göra ett köp åt dig</div></div>'
+    + '<div style="background:var(--color-paper);border:1px solid var(--color-line);border-radius:14px;padding:14px 16px;margin-bottom:14px">'
+    +   '<div style="font-size:15px;font-weight:700;color:var(--color-navy-900)">' + escapeHtml(order.desc) + '</div>'
+    +   '<div style="font-size:13px;color:rgb(28 43 58 / .6);margin-top:2px">från ' + escapeHtml(order.merchant) + '</div>'
+    +   (order.amount ? '<div style="font-size:22px;font-weight:800;color:var(--color-navy-900);margin-top:8px">' + escapeHtml(order.amount) + '</div>' : '')
+    + '</div>'
+    + '<label style="display:block;font-size:12px;font-weight:700;color:rgb(28 43 58 / .7);margin-bottom:6px">Betala med</label>'
+    + '<select id="kbuy-card" style="width:100%;height:42px;border:1px solid var(--color-line);border-radius:11px;padding:0 12px;font-size:14px;color:var(--color-navy-900);background:#fff;margin-bottom:14px">' + opts + '</select>'
+    + '<div id="kbuy-scan" style="border:1px solid rgba(23,138,90,.25);background:rgba(23,138,90,.05);border-radius:13px;padding:12px 14px;font-size:12.5px;color:var(--color-navy-900);line-height:1.7"></div>'
+    + '<p style="font-size:13px;font-weight:700;color:var(--color-navy-900);text-align:center;margin:14px 0">Är du säker på att detta är rätt?</p>'
+    + '<div style="display:flex;gap:9px"><button id="kbuy-cancel" class="btn btn-ghost" style="flex:1;height:46px">Avbryt</button><button id="kbuy-go" class="btn btn-safe" style="flex:1;height:46px">Ja, godkänn köp</button></div>'
+    + '<div style="font-size:11px;color:rgb(28 43 58 / .4);text-align:center;margin-top:12px">🔒 Demoläge – ingen riktig betalning genomförs.</div>');
+  const scan = ov.querySelector('#kbuy-scan');
+  const renderScan = () => {
+    const c = cards[+ov.querySelector('#kbuy-card').value] || cards[0];
+    scan.innerHTML = '<div style="font-weight:700;margin-bottom:4px">🔎 Kryptos koll innan betalning</div>'
+      + '✓ Betalar med ' + escapeHtml(cardLabel(c)) + '<br>'
+      + '✓ Mottagare: ' + escapeHtml(order.merchant) + '<br>'
+      + '⚠ Dubbelkolla: rätt vara (<b>' + escapeHtml(order.desc) + '</b>)' + (order.amount ? ' och rätt summa (<b>' + escapeHtml(order.amount) + '</b>)' : '') + '?';
+  };
+  renderScan();
+  ov.querySelector('#kbuy-card').addEventListener('change', renderScan);
+  ov.querySelector('#kbuy-cancel').addEventListener('click', () => { ov.remove(); showToast('Köpet avbröts.'); });
+  ov.querySelector('#kbuy-go').addEventListener('click', () => {
+    const c = cards[+ov.querySelector('#kbuy-card').value] || cards[0];
+    const btn = ov.querySelector('#kbuy-go'); btn.disabled = true; btn.textContent = 'Betalar…';
+    setTimeout(() => {
+      ov.firstElementChild.innerHTML = '<div style="text-align:center;padding:8px 4px">'
+        + '<div style="font-size:40px;margin-bottom:8px">✅</div>'
+        + '<div style="font-size:18px;font-weight:800;color:var(--color-navy-900);margin-bottom:6px">Beställning lagd!</div>'
+        + '<p style="font-size:13.5px;color:rgb(28 43 58 / .62);line-height:1.55;margin-bottom:6px">' + escapeHtml(order.desc) + ' från <b>' + escapeHtml(order.merchant) + '</b>' + (order.amount ? ' – ' + escapeHtml(order.amount) : '') + ' betalt med ' + escapeHtml(cardLabel(c)) + '.</p>'
+        + '<p style="font-size:12px;color:rgb(28 43 58 / .45);margin-bottom:16px">Demo – ingen riktig betalning gjordes.</p>'
+        + '<button id="kbuy-done" class="btn btn-safe" style="height:44px;padding:0 26px">Klar</button></div>';
+      ov.querySelector('#kbuy-done').addEventListener('click', () => ov.remove());
+    }, 900);
+  });
+}
+
 
 /* ── Wallet-notiser (spara vid köp / fyll i) ── */
 function hideBar(id) { $(id).style.display = 'none'; const open = ['infobar', 'pwbar', 'wsavebar', 'wfillbar'].some((b) => $(b) && $(b).style.display === 'flex'); if (!open) window.view.insetTop(0); }
@@ -1533,3 +1870,7 @@ if ($('np-close')) $('np-close').addEventListener('click', () => netToggle(false
 if ($('np-clear')) $('np-clear').addEventListener('click', () => { window.net.clear(); netRows.clear(); netSel = null; renderNetRows(); renderNetDetail(null); });
 if ($('np-filter')) $('np-filter').addEventListener('input', () => { netFilter = $('np-filter').value.toLowerCase(); renderNetRows(); });
 window.net.onRow((r) => { netRows.set(r.id, r); if (netOpen) scheduleNetRender(); });
+
+// ── Session-återställning vid uppstart — körs SIST så all state är deklarerad ──
+if (account && account.token) { try { window.session.setkey(accountKey(account)); } catch {} refreshPro(); }
+else { try { window.session.logout(null); } catch {} }   // utloggad vid start → rensa webbsession (ingen kvarvarande Gmail-inloggning)

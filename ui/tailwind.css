@@ -2817,6 +2817,14 @@ svg {
   .btn-safe:hover {
     background: var(--color-navy-800);
   }
+  .btn-ghost {
+    background-color: var(--color-white);
+    color: var(--color-navy-900);
+    border: 1.5px solid var(--color-line);
+  }
+  .btn-ghost:hover {
+    background: var(--color-paper);
+  }
   .btn-risk {
     background-color: var(--color-white);
     color: #9a4a4a;

@@ -517,18 +517,16 @@ function migratePwLegacy(key) {   // första inloggningen: flytta ev. gamla (ick
 }
 // Sätt inloggat konto UTAN att röra webbsessionen (vid uppstart — sessionen ligger redan kvar på disk)
 ipcMain.handle('session:setkey', (_e, d) => { currentAcctKey = (d && d.key) || null; if (currentAcctKey) migratePwLegacy(currentAcctKey); return { ok: true }; });
-// Riktig inloggning: rensa och återställ kontots webbsession
-ipcMain.handle('session:login', async (e, d) => {
+// Inloggning: sätt kontonyckel (lösenordsvalvet). Rör ALDRIG webbsessionen — cookies (Google m.fl.) ska överleva.
+ipcMain.handle('session:login', async (_e, d) => {
   const key = d && d.key; currentAcctKey = key || null;
   if (key) migratePwLegacy(key);
-  await clearWebSession(); await restoreAccountCookies(key);
-  reloadVisible(ctxFor(e)); return { ok: true };
+  return { ok: true };
 });
-// Utloggning: spara kontots session, rensa browsern (utloggad ur Gmail m.fl.), lås lösenord
-ipcMain.handle('session:logout', async (e, d) => {
-  const key = d && d.key;
-  await saveAccountCookies(key); await clearWebSession(); currentAcctKey = null;
-  reloadVisible(ctxFor(e)); return { ok: true };
+// Utloggning ur Prowl-kontot: lås lösenordsvalvet, men behåll webbsessionen (man förblir inloggad i Google m.fl.).
+ipcMain.handle('session:logout', async (_e, d) => {
+  currentAcctKey = null;
+  return { ok: true };
 });
 ipcMain.on('pw:capture', (e, c) => {
   if (!currentAcctKey) return;             // utloggad → spara/erbjud inte lösenord

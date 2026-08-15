@@ -71,9 +71,29 @@ function createTab(url, incognito) {
   const tab = { id: ++seq, url: null, title: incognito ? 'Inkognito' : 'Ny flik', favicon: null, cleared: new Set(), bypassed: new Set(), canBack: false, canForward: false, verdict: null, warning: null, toastDismissed: new Set(), entering: true, incognito: !!incognito, overlay: null };
   if (incognito) window.view.markIncognito(tab.id);
   tabs.push(tab); switchTab(tab);
+  saveOpenTabs();
   setTimeout(() => { tab.entering = false; }, 280);
   if (url) guardedNavigate(tab, url);
   return tab;
+}
+// ── Öppna flikar sparas så de kommer tillbaka nästa gång browsern öppnas ──
+const OPEN_TABS_KEY = 'skoll-open-tabs';
+function saveOpenTabs() {
+  if (windowIncognito) return;                                  // inkognito sparas aldrig
+  try {
+    const urls = tabs.filter((t) => !t.incognito && t.url).map((t) => t.url);
+    localStorage.setItem(OPEN_TABS_KEY, JSON.stringify(urls));
+  } catch {}
+}
+function restoreTabs() {
+  if (windowIncognito) { createTab(null); return; }
+  let urls = [];
+  try { urls = JSON.parse(localStorage.getItem(OPEN_TABS_KEY) || '[]'); } catch {}
+  urls = (Array.isArray(urls) ? urls : []).filter((u) => typeof u === 'string' && u);
+  if (!urls.length) { createTab(null); return; }
+  const first = createTab(urls[0]);
+  for (let i = 1; i < urls.length; i++) createTab(urls[i]);
+  if (first) switchTab(first);                                  // första fliken aktiv igen
 }
 // Full-sides-rutor (inställningar m.m.) hör till fliken de öppnades på.
 const OVERLAY_IDS = ['settings', 'login', 'bookmarks', 'bgpick', 'qr'];
@@ -108,6 +128,7 @@ function closeTab(tab) {
   const i = tabs.indexOf(tab); if (i < 0) return;
   window.view.destroy(tab.id);
   tabs.splice(i, 1);
+  saveOpenTabs();
   if (!tabs.length) { createTab(null); return; }
   if (active === tab) switchTab(tabs[Math.max(0, i - 1)]); else renderTabs();
 }
@@ -164,6 +185,7 @@ window.view.onLinkNavigate((id, url) => { const t = byId(id); if (t) guardedNavi
 window.view.onDidNavigate((id, url, b, f) => {
   const t = byId(id); if (!t) return;
   t.url = url; t.canBack = b; t.canForward = f;
+  saveOpenTabs();
   if (t.warning && t.warning.url !== url) { t.warning = null; if (t === active) hideInfobar(); }
   if (t === active) { addressInput.value = pretty(url); updateNavButtons(); updateStar(); }
   backgroundCheck(t, url);
@@ -1505,7 +1527,7 @@ tickClock(); setInterval(tickClock, 15000);
 greet(); setInterval(greet, 60000); // uppdatera hälsningen om timmen rullar över
 applyStoredBg(); applyTopSitesMode(); initAdblock();
 sendBounds();
-createTab(null);
+restoreTabs();
 setTimeout(sendBounds, 300);
 
 /* ── Hacker-intro (enkel välkomst, första gången) ── */
@@ -1872,5 +1894,6 @@ if ($('np-filter')) $('np-filter').addEventListener('input', () => { netFilter =
 window.net.onRow((r) => { netRows.set(r.id, r); if (netOpen) scheduleNetRender(); });
 
 // ── Session-återställning vid uppstart — körs SIST så all state är deklarerad ──
+// Rensa ALDRIG webbsessionen vid start: cookies (Google-inlogg m.m.) ska överleva att man stänger browsern.
 if (account && account.token) { try { window.session.setkey(accountKey(account)); } catch {} refreshPro(); }
-else { try { window.session.logout(null); } catch {} }   // utloggad vid start → rensa webbsession (ingen kvarvarande Gmail-inloggning)
+else { try { window.session.setkey(null); } catch {} }

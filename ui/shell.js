@@ -537,12 +537,16 @@ let pendingLogin = null;   // (kvar, oanvänt)
 let pendingSubmit = null;  // { type:'login'|'signup', email, password, name } för 2FA-koden + "skicka ny kod"
 let pendingResetEmail = null;  // glömt-lösenord-flödet
 const EMAIL_RE = /^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$/;
-function refreshActiveSettings() {
+// Familj + Vänner/chatt kräver inloggning: dölj flikarna helt när man är utloggad.
+function applyAuthGates() {
+  const gated = ['vanner'];
+  gated.forEach((c) => { const t = document.querySelector('#settings-nav .set-tab[data-cat="' + c + '"]'); if (t) t.style.display = account ? '' : 'none'; });
   const on = document.querySelector('#settings-nav .set-tab.on');
   const cat = on && on.dataset.cat;
-  if (cat && typeof showSettingsCat === 'function') showSettingsCat(cat);
+  if (!account && cat && gated.indexOf(cat) >= 0) { if (typeof showSettingsCat === 'function') showSettingsCat('utseende'); return; }
+  if (cat && typeof showSettingsCat === 'function') showSettingsCat(cat);   // omrendera aktiv flik (konto/vänner uppdateras vid login)
 }
-function updateAccountBtn() { $('account-btn').classList.toggle('on', !!account); greet(); if (typeof refreshActiveSettings === 'function') refreshActiveSettings(); }
+function updateAccountBtn() { $('account-btn').classList.toggle('on', !!account); greet(); if (typeof applyAuthGates === 'function') applyAuthGates(); }
 function setLoginView(name) {
   const map = { login: 'login-form', signup: 'login-signup', code: 'login-code', reset: 'login-reset', resetconfirm: 'login-reset-confirm', account: 'login-account-view' };
   for (const k in map) { const el = $(map[k]); if (el) el.style.display = (k === name) ? 'block' : 'none'; }

@@ -369,9 +369,15 @@ function ensureView(ctx, tabId) {
     return { action: 'deny' };
   });
   wc.on('will-navigate', (e, url) => {
+    // Ad/tracker-mål → blockera helt.
+    if (adblockOn && isBlockedTarget(url, wc.getURL())) { e.preventDefault(); return; }
+    // Samma origin (formulär-POST, 2FA-kod, fler-stegs-inloggning) → låt navigeringen ske NATIVT så POST-datan
+    // bevaras. preventDefault + omladdning via loadURL blir en GET → koden/formuläret tappas (GitHub-2FA-buggen).
+    let sameOrigin = false;
+    try { sameOrigin = new URL(url).origin === new URL(wc.getURL()).origin; } catch {}
+    if (sameOrigin) return;
+    // Korsdomän-länkklick → scanna först via guardedNavigate (som förut).
     e.preventDefault();
-    // Blockera BARA mål som motorn flaggar som annons/tracker → riktiga sidor & nedladdningar går alltid fram.
-    if (adblockOn && isBlockedTarget(url, wc.getURL())) return;
     sendTo(ctx, 'link-navigate', tabId, url);
   });
   wc.on('will-redirect', (e, url) => {

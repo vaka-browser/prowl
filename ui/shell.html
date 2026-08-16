@@ -5,6 +5,10 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self';" />
   <title>Prowl</title>
   <link rel="stylesheet" href="tailwind.css" />
+<style>
+@keyframes dlpulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+#dl-btn.dl-busy svg { animation: dlpulse 1.1s ease-in-out infinite; color: #2f8fd4; }
+</style>
 </head>
 <body class="flex flex-col">
 
@@ -97,6 +101,7 @@
     <button id="net-btn" class="icon-btn" title="Nätverksinspektör – se all trafik">
       <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2 5 4-14 2 9h2l1-2 1 2h2"/></svg>
     </button>
+    <button id="dl-btn" class="icon-btn relative" title="Nedladdningar" style="display:none"><svg class="ic"><use href="#i-download" /></svg><span id="dl-badge" style="display:none;position:absolute;bottom:2px;right:2px;min-width:15px;height:15px;padding:0 3px;border-radius:999px;background:#2f8fd4;color:#fff;font-size:9px;font-weight:700;line-height:15px;text-align:center;box-shadow:0 0 0 2px var(--color-chrome,#eef2f6)"></span></button>
     <button id="settings-btn" class="icon-btn" title="Inställningar"><svg class="ic"><use href="#i-settings" /></svg></button>
     <button id="account-btn" class="icon-btn relative" title="Konto"><svg class="ic"><use href="#i-user" /></svg></button>
     <button id="menu-btn" class="icon-btn" title="Meny"><svg class="ic"><use href="#i-menu" /></svg></button>

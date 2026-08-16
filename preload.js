@@ -70,6 +70,7 @@ contextBridge.exposeInMainWorld('dl', {
   list: () => ipcRenderer.invoke('dl:list'),
   open: (id) => ipcRenderer.send('dl:open', id),
   folder: (id) => ipcRenderer.send('dl:folder', id),
+  popupToggle: () => ipcRenderer.send('dl:popup-toggle'),
   removeThreat: (id) => ipcRenderer.send('dl:remove-threat', id),
   keepAnyway: (id) => ipcRenderer.send('dl:keep-anyway', id),
   onUpdate: (cb) => ipcRenderer.on('download-update', (_e, r) => cb(r)),

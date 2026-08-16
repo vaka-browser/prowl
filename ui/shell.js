@@ -1118,7 +1118,19 @@ function renderDownloads() {
     list.appendChild(row);
   });
 }
-window.dl.onUpdate((r) => { dlMap.set(r.id, r); if ($('downloads-list')) renderDownloads(); });
+window.dl.onUpdate((r) => { dlMap.set(r.id, r); if ($('downloads-list')) renderDownloads(); updateDlButton(); });
+function updateDlButton() {
+  const btn = $('dl-btn'); if (!btn) return;
+  const items = [...dlMap.values()];
+  if (items.length) btn.style.display = '';
+  const active = items.filter((d) => d.state === 'progressing' || d.state === 'scanning').length;
+  const badge = $('dl-badge');
+  if (badge) {
+    if (active > 0) { badge.textContent = String(active); badge.style.display = ''; btn.classList.add('dl-busy'); }
+    else { badge.style.display = 'none'; btn.classList.remove('dl-busy'); }
+  }
+}
+{ const b = $('dl-btn'); if (b) b.addEventListener('click', () => window.dl.popupToggle()); }
 /* Farlig nedladdning stoppad → varningsbar */
 let threatId = null;
 window.dl.onThreat((t) => {

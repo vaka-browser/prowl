@@ -49,7 +49,36 @@ function makeCtx(win, incognito) {
 }
 function ctxFor(event) { return wins.get(event.sender.id); }
 function sendTo(ctx, ...a) { if (ctx && ctx.win && !ctx.win.isDestroyed()) ctx.win.webContents.send(...a); }
-function broadcast(...a) { wins.forEach((ctx) => sendTo(ctx, ...a)); }
+function broadcast(...a) { wins.forEach((ctx) => sendTo(ctx, ...a)); if (a[0] === 'download-update') pushDownloadPopups(); }
+function pushDownloadPopups() {
+  wins.forEach((ctx) => { if (ctx.dlWin && !ctx.dlWin.isDestroyed()) ctx.dlWin.webContents.send('dl-data', downloads); });
+}
+function positionDlPopup(ctx) {
+  if (!ctx || !ctx.dlWin || ctx.dlWin.isDestroyed() || !ctx.win || ctx.win.isDestroyed()) return;
+  const cb = ctx.win.getContentBounds(); const w = 380;
+  try { ctx.dlWin.setPosition(cb.x + cb.width - w - 10, cb.y + 96); } catch {}
+}
+function openDlPopup(ctx) {
+  if (!ctx || !ctx.win || ctx.win.isDestroyed()) return;
+  if (ctx.dlWin && !ctx.dlWin.isDestroyed()) { positionDlPopup(ctx); ctx.dlWin.webContents.send('dl-data', downloads); return; }
+  const cb = ctx.win.getContentBounds(); const w = 380, h = 470;
+  const cw = new BrowserWindow({
+    parent: ctx.win, frame: false, transparent: true, backgroundColor: '#00000000',
+    resizable: false, movable: false, minimizable: false, maximizable: false,
+    skipTaskbar: true, hasShadow: false, show: false, width: w, height: h,
+    x: cb.x + cb.width - w - 10, y: cb.y + 96,
+    webPreferences: { nodeIntegration: true, contextIsolation: false },
+  });
+  ctx.dlWin = cw;
+  const repos = () => positionDlPopup(ctx);
+  ctx.win.on('move', repos); ctx.win.on('resize', repos);
+  cw.loadFile(path.join(__dirname, 'ui', 'downloads.html'));
+  cw.webContents.on('did-finish-load', () => { cw.webContents.send('dl-data', downloads); cw.showInactive(); });
+  cw.on('closed', () => {
+    try { ctx.win.removeListener('move', repos); ctx.win.removeListener('resize', repos); } catch {}
+    if (ctx.dlWin === cw) ctx.dlWin = null;
+  });
+}
 
 /* ────────── Adblocker (kurerad värdlista – demo) ────────── */
 const AD_HOSTS = [
@@ -719,6 +748,7 @@ function trackDownloads(sess) {
     const rec = { id, filename: item.getFilename(), url: item.getURL(), path: savePath, total: item.getTotalBytes(), received: 0, state: 'progressing', scan: null };
     downloads.unshift(rec);
     broadcast('download-update', rec);
+    try { const fw = BrowserWindow.getFocusedWindow(); let c = fw ? wins.get(fw.webContents.id) : null; if (!c) c = wins.values().next().value; if (c) openDlPopup(c); } catch {}
     item.on('updated', (_e2, state) => { rec.received = item.getReceivedBytes(); rec.state = state; broadcast('download-update', rec); });
     item.once('done', (_e2, state) => {
       rec.received = item.getReceivedBytes();
@@ -728,6 +758,8 @@ function trackDownloads(sess) {
   });
 }
 ipcMain.handle('dl:list', () => downloads);
+ipcMain.on('dl:popup-toggle', (e) => { const ctx = wins.get(e.sender.id); if (!ctx) return; if (ctx.dlWin && !ctx.dlWin.isDestroyed()) ctx.dlWin.close(); else openDlPopup(ctx); });
+ipcMain.on('dl:popup-close', (e) => { const cw = BrowserWindow.fromWebContents(e.sender); if (cw && !cw.isDestroyed()) cw.close(); });
 ipcMain.on('dl:open', (_e, id) => { const r = downloads.find((d) => d.id === id); if (r && r.state !== 'infected' && r.state !== 'deleted') shell.openPath(r.path).catch(() => {}); });
 ipcMain.on('dl:folder', (_e, id) => { const r = downloads.find((d) => d.id === id); if (r && r.state !== 'infected' && r.state !== 'deleted') shell.showItemInFolder(r.path); });
 ipcMain.on('dl:remove-threat', (_e, id) => {

@@ -1099,6 +1099,15 @@ app.whenReady().then(() => {
   applyClientHints(session.defaultSession);
   installAdblockOn(session.defaultSession);
   trackDownloads(session.defaultSession);
+  // Ingen OS-menyrad (File/Edit/View…) i fönstret — webbläsaren har sin egen ≡-meny.
+  // På macOS behålls en riktig meny (systemets menyrad + Cmd+C/V/A m.m.).
+  try {
+    if (process.platform === 'darwin') {
+      Menu.setApplicationMenu(Menu.buildFromTemplate([{ role: 'appMenu' }, { role: 'editMenu' }, { role: 'viewMenu' }, { role: 'windowMenu' }]));
+    } else {
+      Menu.setApplicationMenu(null);
+    }
+  } catch {}
   createWindow(false);
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(false); });
   startAutoUpdate();

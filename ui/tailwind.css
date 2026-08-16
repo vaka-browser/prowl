@@ -2150,6 +2150,10 @@ svg {
     height: 16px;
     border-radius: 4px;
   }
+  .tab .fav.on-dark {
+    background-color: #2e4258;
+    border-radius: 5px;
+  }
   .tab .tclose {
     display: grid;
     height: calc(var(--spacing) * 5);

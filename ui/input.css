@@ -71,6 +71,7 @@ svg { display: block; }
   .tab .ttl { @apply truncate flex-1; }
   .tab .fav { width: 16px; height: 16px; flex: none; display: grid; place-items: center; color: var(--color-navy-700); }
   .tab .fav img { width: 16px; height: 16px; border-radius: 4px; }
+  .tab .fav.on-dark { background: linear-gradient(180deg, #35496220, #24374d); background-color: #2e4258; border-radius: 5px; }
   .tab .tclose { @apply grid place-items-center w-5 h-5 rounded-md opacity-0 transition; }
   .tab:hover .tclose, .tab.active .tclose { opacity: .5; }
   .tab .tclose:hover { opacity: 1; background: rgb(14 42 71 / .1); }

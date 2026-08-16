@@ -132,15 +132,38 @@ function closeTab(tab) {
   if (!tabs.length) { createTab(null); return; }
   if (active === tab) switchTab(tabs[Math.max(0, i - 1)]); else renderTabs();
 }
+// Somliga sajter (t.ex. GitHub) skickar en VIT mörklägeslogga som blir osynlig på den ljusa flik-raden.
+// Mät favicon-ljushet och lägg en subtil mörk platta bakom nästan-vita loggor så de syns.
+const favLight = {};
+function detectFavLight(url) {
+  if (!url || url in favLight) return;
+  favLight[url] = 'pending';
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    try {
+      const c = document.createElement('canvas'); c.width = 16; c.height = 16;
+      const x = c.getContext('2d'); x.drawImage(img, 0, 0, 16, 16);
+      const d = x.getImageData(0, 0, 16, 16).data;
+      let sum = 0, n = 0;
+      for (let i = 0; i < d.length; i += 4) { if (d[i + 3] > 20) { sum += (d[i] + d[i + 1] + d[i + 2]) / 3; n++; } }
+      favLight[url] = n > 0 && (sum / n) > 225;   // nästan vit → behöver mörk platta
+    } catch { favLight[url] = false; }             // CORS-spärrad → kan ej mäta, lämna som är
+    try { renderTabs(); } catch {}
+  };
+  img.onerror = () => { favLight[url] = false; };
+  img.src = url;
+}
 function renderTabs() {
   const host = $('tabs'); host.innerHTML = '';
   tabs.forEach((tab) => {
+    if (tab.favicon) detectFavLight(tab.favicon);
     const el = document.createElement('div');
     el.className = 'tab' + (tab === active ? ' active' : '') + (tab.entering ? ' entering' : '') + (tab.incognito ? ' incognito' : '');
     const fav = tab.incognito
       ? `<span class="fav"><svg class="ic" style="width:15px;height:15px"><use href="#i-incognito" /></svg></span>`
       : (tab.favicon
-        ? `<span class="fav"><img src="${tab.favicon}" onerror="this.style.visibility='hidden'"></span>`
+        ? `<span class="fav${favLight[tab.favicon] === true ? ' on-dark' : ''}"><img src="${tab.favicon}" onerror="this.style.visibility='hidden'"></span>`
         : `<span class="fav"><svg class="ic" style="width:15px;height:15px"><use href="#${tab.url ? 'i-globe' : 'i-shield'}" /></svg></span>`);
     el.innerHTML = `${fav}<span class="ttl">${escapeHtml(tab.title || 'Ny flik')}</span><button class="tclose"><svg class="ic" style="width:13px;height:13px"><use href="#i-close" /></svg></button>`;
     el.addEventListener('click', (e) => {

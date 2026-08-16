@@ -2901,6 +2901,12 @@ svg {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Mörkläge: mest-besökta/förslags-dropdownen */
+:root[data-theme="dark"] #omni-suggest { background: #171718; border-color: #2b2b2d; box-shadow: 0 14px 38px rgb(0 0 0 / .5); }
+:root[data-theme="dark"] .sug.sel, :root[data-theme="dark"] .sug:hover { background: rgb(255 255 255 / .07); }
+:root[data-theme="dark"] .sug .sfav { color: #a8a8ac; }
+:root[data-theme="dark"] .sug .surl { color: #f2f2f4; }
+:root[data-theme="dark"] .sug .stitle { color: rgb(240 240 244 / .5); }
 body.incog #omni-suggest {
   background: #150c28;
   border-color: rgba(124,58,237,.32);

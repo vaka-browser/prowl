@@ -71,9 +71,9 @@ function createTab(url, incognito) {
   const tab = { id: ++seq, url: null, title: incognito ? 'Inkognito' : 'Ny flik', favicon: null, cleared: new Set(), bypassed: new Set(), canBack: false, canForward: false, verdict: null, warning: null, toastDismissed: new Set(), entering: true, incognito: !!incognito, overlay: null };
   if (incognito) window.view.markIncognito(tab.id);
   tabs.push(tab); switchTab(tab);
-  saveOpenTabs();
   setTimeout(() => { tab.entering = false; }, 280);
   if (url) guardedNavigate(tab, url);
+  saveOpenTabs();
   return tab;
 }
 // ── Öppna flikar sparas så de kommer tillbaka nästa gång browsern öppnas ──
@@ -90,10 +90,9 @@ function restoreTabs() {
   let urls = [];
   try { urls = JSON.parse(localStorage.getItem(OPEN_TABS_KEY) || '[]'); } catch {}
   urls = (Array.isArray(urls) ? urls : []).filter((u) => typeof u === 'string' && u);
-  if (!urls.length) { createTab(null); return; }
-  const first = createTab(urls[0]);
-  for (let i = 1; i < urls.length; i++) createTab(urls[i]);
-  if (first) switchTab(first);                                  // första fliken aktiv igen
+  const home = createTab(null);                                 // öppna alltid på huvudmenyn (hemfliken)
+  for (let i = 0; i < urls.length; i++) createTab(urls[i]);     // tidigare flikar återställs och finns kvar i flik-raden
+  switchTab(home);                                              // ...men vi landar alltid på huvudmenyn
 }
 // Full-sides-rutor (inställningar m.m.) hör till fliken de öppnades på.
 const OVERLAY_IDS = ['settings', 'login', 'bookmarks', 'bgpick', 'qr'];

@@ -901,13 +901,28 @@ function renderSug() {
 }
 function openSug() { if (!sug.open) { sug.open = true; window.view.hide(); } positionSug(); suggestEl.classList.add('on'); }
 function closeSug(restore) { suggestEl.classList.remove('on'); sug.items = []; sug.sel = -1; if (sug.open) { sug.open = false; if (restore !== false) showActiveTab(); } }
+function topSitesForSug() {
+  if (active && active.incognito) return [];                     // ingen historik i inkognito
+  const seen = new Set(); const out = [];
+  for (const e of getHistory().slice().sort((a, b) => (b.n || 0) - (a.n || 0))) {
+    const host = domainOf(e.url); if (!host || seen.has(host)) continue;
+    seen.add(host); out.push({ url: e.url, host, title: e.title || host, favicon: e.favicon, n: e.n || 0 });
+    if (out.length >= 8) break;
+  }
+  return out;
+}
 function updateSug(q) {
   const inp = sug.input; if (!inp) return;
-  sug.items = historyMatches(q);
-  if (sug.items.length && document.activeElement === inp && (q || '').trim()) { renderSug(); openSug(); } else closeSug();
+  const query = (q || '').trim();
+  sug.items = query ? historyMatches(query) : topSitesForSug();  // tomt fält → dina mest besökta sajter
+  if (sug.items.length && document.activeElement === inp) { renderSug(); openSug(); } else closeSug();
 }
 function pickSug(it) { closeSug(false); if (active) guardedNavigate(active, it.url); }
 function attachAutocomplete(inp, anchor) {
+  inp.addEventListener('focus', () => {
+    sug.input = inp; sug.anchor = anchor; sug.sel = -1;
+    if (!inp.value.trim()) updateSug('');                        // klick i tomt sökfält → visa mest besökta
+  });
   inp.addEventListener('input', (e) => {
     const typed = inp.value;                                // vad användaren faktiskt skrivit (t.ex. "ver")
     sug.input = inp; sug.anchor = anchor; sug.sel = -1;

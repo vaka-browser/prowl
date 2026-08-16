@@ -537,7 +537,12 @@ let pendingLogin = null;   // (kvar, oanvänt)
 let pendingSubmit = null;  // { type:'login'|'signup', email, password, name } för 2FA-koden + "skicka ny kod"
 let pendingResetEmail = null;  // glömt-lösenord-flödet
 const EMAIL_RE = /^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$/;
-function updateAccountBtn() { $('account-btn').classList.toggle('on', !!account); greet(); }
+function refreshActiveSettings() {
+  const on = document.querySelector('#settings-nav .set-tab.on');
+  const cat = on && on.dataset.cat;
+  if (cat && typeof showSettingsCat === 'function') showSettingsCat(cat);
+}
+function updateAccountBtn() { $('account-btn').classList.toggle('on', !!account); greet(); if (typeof refreshActiveSettings === 'function') refreshActiveSettings(); }
 function setLoginView(name) {
   const map = { login: 'login-form', signup: 'login-signup', code: 'login-code', reset: 'login-reset', resetconfirm: 'login-reset-confirm', account: 'login-account-view' };
   for (const k in map) { const el = $(map[k]); if (el) el.style.display = (k === name) ? 'block' : 'none'; }
@@ -1249,7 +1254,7 @@ async function renderFriends() {
   if ($('fr-list')) $('fr-list').style.display = 'block';
   if ($('fr-chat')) $('fr-chat').style.display = 'none';
   stopChatPoll();
-  if (!account) { wrap.innerHTML = '<p class="set-lead">Logga in för att lägga till vänner och chatta.</p>'; return; }
+  if (!account) { wrap.innerHTML = '<div class="fr-note">Logga in för att lägga till vänner och chatta.</div><button id="fr-login" class="btn btn-safe" style="height:40px;padding:0 16px;">Logga in</button>'; const _l = $('fr-login'); if (_l) _l.addEventListener('click', () => openLogin()); return; }
   await loadSocMe();
   if (!socMe || !socMe.username) {
     wrap.innerHTML = '<div class="fr-note">Välj ett <b>användarnamn</b> i Konto-fliken först, så kan du lägga till vänner.</div><button id="fr-go-konto" class="btn btn-safe" style="height:40px;padding:0 16px;">Gå till Konto</button>';

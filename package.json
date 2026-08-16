@@ -1,6 +1,6 @@
 {
   "name": "prowl",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Prowl – hackerutgåvan av den svenska webbläsaren",
   "main": "main.js",
   "scripts": {

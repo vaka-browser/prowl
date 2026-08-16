@@ -271,22 +271,22 @@ body.reduce-motion *, body.reduce-motion *::before, body.reduce-motion *::after 
 }
 
 /* ── Mörkläge: mörkar webbläsarens chrome (växlas via html[data-theme="dark"]) ── */
-:root[data-theme="dark"] body { background: #0a1a2e; color: #eaf1f8; }
-:root[data-theme="dark"] .chrome-top { background: #0a1a2e; }
-:root[data-theme="dark"] .chrome-bar { background: #0b1d31; border-bottom-color: #16324f; }
-:root[data-theme="dark"] .icon-btn { color: #cddcec; }
+:root[data-theme="dark"] body { background: #0c0c0d; color: #f2f2f4; }
+:root[data-theme="dark"] .chrome-top { background: #0c0c0d; }
+:root[data-theme="dark"] .chrome-bar { background: #171718; border-bottom-color: #2b2b2d; }
+:root[data-theme="dark"] .icon-btn { color: #d4d4d8; }
 :root[data-theme="dark"] .icon-btn:hover { background: rgb(255 255 255 / .09); }
-:root[data-theme="dark"] .newtab-btn { color: #cddcec; }
-:root[data-theme="dark"] .newtab-btn:hover { background: rgb(255 255 255 / .1); color: #eaf1f8; }
-:root[data-theme="dark"] .tab { color: #9db4cc; }
-:root[data-theme="dark"] .tab:hover { background: rgb(255 255 255 / .08); color: #eaf1f8; }
-:root[data-theme="dark"] .tab.active { background: #17385f; color: #eaf1f8; box-shadow: none; }
-:root[data-theme="dark"] #omnibox { background: #12294a; --tw-ring-color: #2b4d6e; }
-:root[data-theme="dark"] #address { color: #eaf1f8; }
-:root[data-theme="dark"] #address::placeholder { color: rgb(234 241 248 / .4); }
-:root[data-theme="dark"] #search-engine { color: rgb(234 241 248 / .4); }
-:root[data-theme="dark"] .pill:not(.pill-accent) { background: #12294a; color: #eaf1f8; border-color: #2b4d6e; }
-:root[data-theme="dark"] .pill:not(.pill-accent):hover { background: #1a3556; }
+:root[data-theme="dark"] .newtab-btn { color: #d4d4d8; }
+:root[data-theme="dark"] .newtab-btn:hover { background: rgb(255 255 255 / .1); color: #f2f2f4; }
+:root[data-theme="dark"] .tab { color: #a8a8ac; }
+:root[data-theme="dark"] .tab:hover { background: rgb(255 255 255 / .08); color: #f2f2f4; }
+:root[data-theme="dark"] .tab.active { background: #2b2b2e; color: #f2f2f4; box-shadow: none; }
+:root[data-theme="dark"] #omnibox { background: #1d1d20 !important; --tw-ring-color: #3b3b40; }
+:root[data-theme="dark"] #address { color: #f2f2f4; }
+:root[data-theme="dark"] #address::placeholder { color: rgb(240 240 244 / .4); }
+:root[data-theme="dark"] #search-engine { color: rgb(240 240 244 / .4); }
+:root[data-theme="dark"] .pill:not(.pill-accent) { background: #1d1d20; color: #f2f2f4; border-color: #3b3b40; }
+:root[data-theme="dark"] .pill:not(.pill-accent):hover { background: #27272b; }
 
 /* ── Prowl Calendar ── */
 .cal-month { border: 1px solid var(--color-line); border-radius: 16px; padding: 12px 14px 14px; margin-bottom: 18px; }

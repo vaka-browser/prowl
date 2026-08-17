@@ -1,0 +1,7 @@
+! Vaka egna undantag — sajter som våra scriptlets kraschar.
+! 2026-08-17: chatgpt.com fick "RangeError: Maximum call stack size exceeded"
+! (Proxy-apply-rekursion) av injicerade scriptlets (json-prune mot deras annonser
+! + no-fetch-if mot telemetri) i den inloggade appen. Tomt +js() stänger av ALLA
+! scriptlets för domänen; nätverksblockering och element-göm-regler påverkas inte,
+! så deras annons-XHR ($xhr-regeln mot backend-api/bazaar) blockeras fortfarande.
+chatgpt.com#@#+js()

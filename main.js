@@ -511,9 +511,15 @@ ipcMain.handle('pw:get', (_e, origin) => loadPw().find((p) => p.origin === origi
 ipcMain.handle('pw:save', (_e, c) => {
   const l = loadPw();
   const i = l.findIndex((p) => p.origin === c.origin && p.username === c.username);
-  const rec = { id: c.id || ('p' + Date.now() + Math.floor(Math.random() * 1000)), origin: c.origin, username: c.username || '', password: c.password || '' };
-  if (i >= 0) l[i] = rec; else l.unshift(rec);
+  const rec = { id: c.id || ('p' + Date.now() + Math.floor(Math.random() * 1000)), origin: c.origin, username: c.username || '', password: c.password || '', autofill: c.autofill !== false };
+  if (i >= 0) l[i] = { ...l[i], ...rec }; else l.unshift(rec);
   savePwList(l); return { ok: true };
+});
+ipcMain.handle('pw:set-autofill', (_e, o) => {
+  o = o || {}; const l = loadPw();
+  const p = l.find((x) => x.origin === o.origin && (o.username == null || x.username === o.username));
+  if (p) { p.autofill = !!o.on; savePwList(l); }
+  return { ok: true };
 });
 ipcMain.handle('pw:delete', (_e, id) => { savePwList(loadPw().filter((p) => p.id !== id)); return { ok: true }; });
 /* ── Kaka-valv per konto: logga ut → spara+rensa webbsession; logga in → återställ (samma tjänster tillbaka) ── */

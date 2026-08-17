@@ -1185,11 +1185,28 @@ window.pw.onOffer((c) => {
   let host = c.origin; try { host = new URL(c.origin).hostname.replace(/^www\./, ''); } catch {}
   $('pwbar-sub').textContent = (c.username ? c.username + ' · ' : '') + host;
   hideInfobar();
+  $('pwfillbar').style.display = 'none';
   $('pwbar').style.display = 'flex';
   window.view.insetTop(56);
 });
-$('pwbar-save').addEventListener('click', async () => { if (pwOfferCred) await window.pw.save(pwOfferCred); pwOfferCred = null; hidePwbar(); });
+let pwFillCred = null;   // vilken sparad inloggning autofyll-rutan gäller
+function hidePwfillbar() { $('pwfillbar').style.display = 'none'; if ($('infobar').style.display === 'none') window.view.insetTop(0); }
+$('pwbar-save').addEventListener('click', async () => {
+  if (pwOfferCred) {
+    await window.pw.save({ ...pwOfferCred, autofill: true });
+    pwFillCred = pwOfferCred;
+    let host = pwOfferCred.origin; try { host = new URL(pwOfferCred.origin).hostname.replace(/^www\./, ''); } catch {}
+    $('pwfillbar-sub').textContent = 'Nästa gång du besöker ' + host + ' fyller vi i inloggningen åt dig.';
+  }
+  pwOfferCred = null; hidePwbar();
+  if (pwFillCred) { $('pwfillbar').style.display = 'flex'; window.view.insetTop(56); }
+});
 $('pwbar-no').addEventListener('click', () => { pwOfferCred = null; hidePwbar(); });
+$('pwfillbar-yes').addEventListener('click', () => { pwFillCred = null; hidePwfillbar(); showToast('Vi fyller i lösenordet åt dig nästa gång.'); });
+$('pwfillbar-no').addEventListener('click', async () => {
+  if (pwFillCred) await window.pw.setAutofill({ origin: pwFillCred.origin, username: pwFillCred.username || '', on: false });
+  pwFillCred = null; hidePwfillbar();
+});
 
 /* ── Prowl Wallet ── */
 function fmtNum(s) { return (s || '').replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim(); }
@@ -1561,8 +1578,8 @@ async function showBuyConfirm(order) {
 
 
 /* ── Wallet-notiser (spara vid köp / fyll i) ── */
-function hideBar(id) { $(id).style.display = 'none'; const open = ['infobar', 'pwbar', 'wsavebar', 'wfillbar'].some((b) => $(b) && $(b).style.display === 'flex'); if (!open) window.view.insetTop(0); }
-function showBar(id) { ['infobar', 'pwbar', 'wsavebar', 'wfillbar'].forEach((b) => { if (b !== id && $(b)) $(b).style.display = 'none'; }); $(id).style.display = 'flex'; window.view.insetTop(56); }
+function hideBar(id) { $(id).style.display = 'none'; const open = ['infobar', 'pwbar', 'pwfillbar', 'wsavebar', 'wfillbar'].some((b) => $(b) && $(b).style.display === 'flex'); if (!open) window.view.insetTop(0); }
+function showBar(id) { ['infobar', 'pwbar', 'pwfillbar', 'wsavebar', 'wfillbar'].forEach((b) => { if (b !== id && $(b)) $(b).style.display = 'none'; }); $(id).style.display = 'flex'; window.view.insetTop(56); }
 let wlSaveOffer = null;
 window.wallet.onOffer((c) => {
   wlSaveOffer = c;

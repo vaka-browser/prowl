@@ -24,6 +24,7 @@ async function autofill() {
     const f = findFields(); if (!f) return;
     const creds = await ipcRenderer.invoke('pw:get', location.origin);
     if (!creds) return;
+    if (creds.autofill === false) return;   // användaren tackade nej till autofyll för den här sidan
     if (f.user && !f.user.value) { f.user.value = creds.username; f.user.dispatchEvent(new Event('input', { bubbles: true })); }
     if (f.pw && !f.pw.value) { f.pw.value = creds.password; f.pw.dispatchEvent(new Event('input', { bubbles: true })); }
   } catch {}

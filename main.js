@@ -120,14 +120,18 @@ function loadEngine() {
       const dir = path.join(__dirname, 'filters');
       let files = [];
       try { files = fs.readdirSync(dir).filter((f) => f.endsWith('.txt') && f !== 'resources.txt'); } catch {}
-      const text = files
+      let text = files
         .map((f) => { try { return fs.readFileSync(path.join(dir, f), 'utf8'); } catch { return ''; } })
         .join('\n');
+      if (process.env.VAKA_FILTER_DROP) {
+        const re = new RegExp(process.env.VAKA_FILTER_DROP);
+        text = text.split('\n').filter((l) => !re.test(l)).join('\n');
+      }
       if (!text.trim()) {
         engine = await ElectronBlocker.fromPrebuiltAdsAndTracking(globalThis.fetch || require('cross-fetch'));
       } else {
         // loadCosmeticFilters => element-göm + scriptlet-injektion (pop-under-/redirect-motgifter à la uBlock/Brave)
-        engine = ElectronBlocker.parse(text, { loadCosmeticFilters: true, loadNetworkFilters: true });
+        engine = ElectronBlocker.parse(text, { loadCosmeticFilters: process.env.VAKA_NO_COSMETICS ? false : true, loadNetworkFilters: true });
         try {
           const { Resources } = require('@ghostery/adblocker-electron');
           const resTxt = fs.readFileSync(path.join(dir, 'resources.txt'), 'utf8');

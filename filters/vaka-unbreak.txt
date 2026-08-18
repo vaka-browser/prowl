@@ -5,3 +5,9 @@
 ! scriptlets för domänen; nätverksblockering och element-göm-regler påverkas inte,
 ! så deras annons-XHR ($xhr-regeln mot backend-api/bazaar) blockeras fortfarande.
 chatgpt.com#@#+js()
+! 2026-08-18: YouTube blev helt tom (sök/startsida renderade aldrig, "laddar för evigt").
+! uBlock-regeln no-setTimeout-if ()\,a\,b måste döda YouTubes 5s anti-adblock-paus,
+! men på ES5-reservsidan som vår Chromium 130 får serverad matchar mönstret även
+! den LEGITIMA rendering-timeouten → sidan dör. Bara denna regel undantas;
+! övriga annons-avväpnare (json-prune, trusted-replace m.fl.) behålls.
+www.youtube.com#@#+js(no-setTimeout-if, ()\,a\,b), 5000)

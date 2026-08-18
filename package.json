@@ -1,6 +1,6 @@
 {
   "name": "prowl",
-  "version": "0.3.14",
+  "version": "0.3.15",
   "description": "Prowl – hackerutgåvan av den svenska webbläsaren",
   "main": "main.js",
   "scripts": {
@@ -20,7 +20,7 @@
   "devDependencies": {
     "@electron/packager": "^18.4.4",
     "@tailwindcss/cli": "^4.3.3",
-    "electron": "^33.4.11",
+    "electron": "^43.4.0",
     "electron-builder": "^24.13.3",
     "tailwindcss": "^4.3.3"
   },

@@ -174,12 +174,23 @@ function enableEngineOn(sess) {
   } catch {}
   try {
     const p = ghosteryPreloadPath();
-    if (p) { const cur = sess.getPreloads() || []; if (!cur.includes(p)) sess.setPreloads([...cur, p]); }
+    if (!p) return;
+    if (sess.registerPreloadScript) {          // Electron ≥35 (setPreloads borttaget i nyare)
+      if (!sess.__ghosteryPreloadId) sess.__ghosteryPreloadId = sess.registerPreloadScript({ type: 'frame', filePath: p });
+    } else {
+      const cur = sess.getPreloads() || []; if (!cur.includes(p)) sess.setPreloads([...cur, p]);
+    }
   } catch {}
 }
 function disableEngineOn(sess) {
   try { sess.webRequest.onHeadersReceived(null); sess.webRequest.onBeforeRequest(null); } catch {}
-  try { const p = ghosteryPreloadPath(); if (p) sess.setPreloads((sess.getPreloads() || []).filter((x) => x !== p)); } catch {}
+  try {
+    if (sess.unregisterPreloadScript) {
+      if (sess.__ghosteryPreloadId) { sess.unregisterPreloadScript(sess.__ghosteryPreloadId); sess.__ghosteryPreloadId = null; }
+    } else {
+      const p = ghosteryPreloadPath(); if (p) sess.setPreloads((sess.getPreloads() || []).filter((x) => x !== p));
+    }
+  } catch {}
 }
 
 function installAdblockOn(sess) {
@@ -1134,6 +1145,7 @@ app.whenReady().then(() => {
   // + appnamnet i user-agent och tror att det är en bot ("unusual traffic").
   try {
     app.userAgentFallback = app.userAgentFallback
+      .replace(new RegExp(' ' + app.getName().replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/\\S+', 'i'), '')
       .replace(/ sakerkoll-browser\/\S+/i, '')
       .replace(/ Electron\/\S+/i, '');
     session.defaultSession.setUserAgent(app.userAgentFallback);

@@ -1,5 +1,5 @@
 ! Title: uBlock₀ filters – Badware risks
-! Last modified: Thu, 13 Aug 2026 05:41:44 +0000
+! Last modified: %timestamp%
 ! Expires: 5 days
 ! Description: For sites documented to put users at risk of installing adware/crapware/malware, having login credentials stolen, etc.
 ! The purpose is to at least ensure a user is warned of the risks ahead.
@@ -2531,7 +2531,7 @@ sgp1.cdn.digitaloceanspaces.com###frame[title="encrypted shop"][allowfullscreen]
 ||azurewebsites.net/alertmicrosoft.mp3
 ||azureedge.net/*/esc.js
 ||azureedge.net/*/flscn.js
-/text_tel.js$domain=amplifyapp.com|app|azurestaticapps.net|dev|fit|me|page|site|github.io|herokuapp.com
+/text_tel.js$domain=amplifyapp.com|app|azurestaticapps.net|dev|fit|me|on-forge.com|page|site|github.io|herokuapp.com
 ||netlify.app/text.js|$1p
 ||github.io/my-new-app/text.js$1p
 /a0ler0tm0s.mp3$domain=dev|online|shop
@@ -2552,6 +2552,17 @@ sgp1.cdn.digitaloceanspaces.com###frame[title="encrypted shop"][allowfullscreen]
 !
 ! https://github.com/uBlockOrigin/uAssets/issues/29718
 z13.web.core.windows.net##+js(aeld, DOMContentLoaded, fullscreenEnabled)
+! https://github.com/uBlockOrigin/uAssets/issues/34120
+||roykuashkimayo.$all
+||toolsmastercracked.$all
+||carrymedias.com^$all
+||homebuying-guide.com^$all
+||ladesona.com^$all
+||luiosmardc.ink^$all
+$doc,ipaddress=185.100.85.248
+##body.user-clicked[style="cursor: auto;"] > #root > .app-container
+/images/script.mp3|$media,1p
+/images/bip.mp3|$media,1p
 
 ! SECTION: ClickFix
 ! https://urlscan.io/result/019eee87-e8e4-708e-b456-a7324fde9171/
@@ -2566,6 +2577,9 @@ z13.web.core.windows.net##+js(aeld, DOMContentLoaded, fullscreenEnabled)
 monster###bw-rc-host[style="position: fixed !important; inset: 0px !important; z-index: 2147483647 !important;"]
 .monster/index*.php?flow_id=$doc
 ||sites.google.com/view/codex-desktop-app$doc
+||gta-six-leaks.com^$all
+||whirlpoploaderfast.com^
+##body > .main-wrapper > .main-content > .intro > #checkbox-window
 
 ! https://www.malwarebytes.com/blog/threat-intel/2026/03/infiniti-stealer-a-new-macos-infostealer-using-clickfix-and-python-nuitka
 ##div.card > div#cbRow.checkbox-row[onclick="startVerify()"]
@@ -2739,7 +2753,7 @@ casabasics.es##+js(rmnt, script, String.fromCharCode)
 ||magiskmodule.com^$all
 ! LibreTube - Official site: libretube.dev
 ! https://github.com/libre-tube/LibreTube/issues/4409
-||libretube.*^$all,domain=~libretube.dev,to=~libretube.dev
+||libretube.$doc,to=~libretube.dev
 ||libretubeapk.com^$all,domain=~libretube.dev
 ! ReVanced - Official site: revanced.app
 ! https://old.reddit.com/r/revancedapp/comments/1327o38/list_of_fake_revanced_sites_download_sites/
@@ -2751,7 +2765,8 @@ casabasics.es##+js(rmnt, script, String.fromCharCode)
 ! https://github.com/uBlockOrigin/uAssets/issues/18857
 ! https://github.com/uBlockOrigin/uAssets/pull/19580
 ! https://github.com/hagezi/dns-blocklists/issues/2288
-||revanced.$all,from=~revanced.app,to=~revanced.app
+! https://github.com/uBlockOrigin/uAssets/issues/34131
+||revanced.$doc,to=~revanced.app
 ||revancedapk.$all,domain=~revanced.app
 ||revancedapp.$all,domain=~revanced.app
 ||ytvancedpro.com^$all,domain=~revanced.app
@@ -6334,3 +6349,14 @@ top##body > center + .A + .post
 
 ! https://github.com/uBlockOrigin/uAssets/issues/33982
 ||kai-search.com^$all
+
+! https://github.com/uBlockOrigin/uAssets/issues/34132
+||robtipsyt50kli.blogspot.com^$all
+##body > .wrapper > .card-box > #step-1
+
+! https://github.com/AdguardTeam/AdguardFilters/issues/238513
+||luhxepremiumbags.com^$all
+
+! https://github.com/uBlockOrigin/uAssets/issues/34150
+! https://www.virustotal.com/gui/file/99989e96c1043349a4127d8a2f942bcae693fbaa0b05fc694ee53347d996114b
+||camelote.cn^$all

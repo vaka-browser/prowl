@@ -489,7 +489,10 @@ function ensureView(ctx, tabId) {
   if (ctx.views.has(tabId)) return ctx.views.get(tabId);
   const incognito = ctx.incognito || ctx.incognitoTabs.has(tabId);
   if (incognito) ensureIncognitoAdblock();
-  const wp = { preload: path.join(__dirname, 'content-preload.js'), contextIsolation: true, sandbox: false, nodeIntegration: false };
+  // nodeIntegrationInSubFrames: kortväljaren måste nå fälten i kassornas iframes
+  // (Stripe/PayPal/Klarna lägger varje fält i en egen ram). Preloaden är isolerad
+  // från sidans JS (contextIsolation) och exponerar inget till sidan.
+  const wp = { preload: path.join(__dirname, 'content-preload.js'), contextIsolation: true, sandbox: false, nodeIntegration: false, nodeIntegrationInSubFrames: true };
   if (incognito) wp.partition = 'skoll-incognito';
   const view = new WebContentsView({ webPreferences: wp });
   view.setVisible(false);

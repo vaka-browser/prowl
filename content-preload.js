@@ -345,6 +345,7 @@ function wlShow(menu, anchor, onPick, darkRef, isStatic) {
   });
   (document.body || document.documentElement).appendChild(wlHost);
   wlPosition();
+  wlLog('visar', { kort: menu.cards.length });
   wlArm();                       // säg till alla ramar att en väljare är öppen
 }
 async function wlMenu() {
@@ -353,8 +354,9 @@ async function wlMenu() {
 /* Fältet ligger i DENNA ram (vanlig kassa utan iframe). */
 async function wlOpenLocal(field, fields) {
   if (wlHost && wlField === field) return;
-  const menu = await wlMenu(); if (!menu) return;
-  if (document.activeElement !== field) return;          // fokus hann flytta
+  const menu = await wlMenu();
+  if (!menu) { wlLog('inga-kort'); return; }
+  if (document.activeElement !== field) { wlLog('fokus-flyttade'); return; }
   wlShow(menu, () => field.getBoundingClientRect(), (id) => wlFillEverywhere(id), field, false);
   wlField = field; wlFields = fields;
 }
@@ -430,11 +432,19 @@ function wlHandleMessage(e) {
     if (IS_TOP) { if (wlChildWin === e.source) wlClose(); } else wlUp(d);
   }
 }
+/* Felsökning: starta med VAKA_WALLET_DEBUG=1 → varje beslut hamnar i
+ * <userData>/wallet-debug.log. Av som standard, inget loggas annars. */
+const WL_DEBUG = (() => { try { return !!process.env.VAKA_WALLET_DEBUG; } catch { return false; } })();
+function wlLog(what, extra) {
+  if (!WL_DEBUG) return;
+  try { ipcRenderer.send('wallet:debug', { what, top: IS_TOP, url: location.href.slice(0, 120), ...(extra || {}) }); } catch {}
+}
 function wlMaybeOpen(target) {
   try {
     if (!target || !target.tagName || target === wlHost) return;
     const f = findCardFieldsLoose();
     const role = cardRoleOf(target, f);
+    wlLog('fokus', { tag: target.tagName, name: target.name || target.id || '', role: role || 'ingen', harNummerfalt: !!f.number });
     // Öppna på kortnummerfältet, eller på övriga kortfält när ramen faktiskt
     // har ett kortnummer (annars kan ett "month"-fält på en vanlig sida trigga).
     if (!role || (role !== 'number' && !f.number)) {
@@ -462,6 +472,9 @@ function walletRun() {
     document.addEventListener('focusout', (e) => {
       if (e.target !== wlField) return;
       setTimeout(() => {
+        // Hela fönstret tappade fokus (skärmdump, Alt-Tab, notis) – behåll väljaren,
+        // annars försvinner den så fort man gör något utanför webbläsaren.
+        if (!document.hasFocus()) return;
         if (document.activeElement === wlField) return;
         if (wlHost) wlClose();
         if (wlUpOpen) { wlUpOpen = false; wlUp({ [WL_MSG]: 1, t: 'close' }); }

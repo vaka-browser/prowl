@@ -819,6 +819,14 @@ ipcMain.handle('wallet:menu', () => ({
   cards: loadCards().map(cardPublic),
   labels: { choose: trUi('Välj kort'), manage: trUi('Hantera kort'), exp: trUi('Giltigt till') },
 }));
+/* Felsökningslogg från kortväljaren (bara när VAKA_WALLET_DEBUG=1 satts). */
+ipcMain.on('wallet:debug', (_e, d) => {
+  try {
+    if (!process.env.VAKA_WALLET_DEBUG) return;
+    fs.appendFileSync(path.join(app.getPath('userData'), 'wallet-debug.log'),
+      new Date().toISOString() + ' ' + JSON.stringify(d) + '\n');
+  } catch {}
+});
 /* "Hantera kort" i väljaren → öppna Wallet i inställningarna. */
 ipcMain.on('wallet:open-manager', (e) => {
   try { const ctx = e.sender.__ctx || ctxFor(e); if (ctx) sendTo(ctx, 'open-settings', 'wallet'); } catch {}

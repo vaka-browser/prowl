@@ -7,3 +7,4 @@ dist-installer/
 *.dmg
 *.log
 .DS_Store
+*.bak

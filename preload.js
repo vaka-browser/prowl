@@ -1,6 +1,10 @@
 'use strict';
 const { contextBridge, ipcRenderer } = require('electron');
 
+contextBridge.exposeInMainWorld('locale', {
+  load: (lang) => { try { return ipcRenderer.sendSync('i18n:load', lang) || {}; } catch { return {}; } },
+});
+
 contextBridge.exposeInMainWorld('skoll', {
   checkUrl: (url) => ipcRenderer.invoke('skoll:check-url', url),
   dailyImage: () => ipcRenderer.invoke('skoll:daily-image'),

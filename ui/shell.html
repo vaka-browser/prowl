@@ -96,7 +96,7 @@
       <svg class="ic ic-sm"><use href="#i-ban" /></svg><span id="adcount" class="tabular-nums">0</span>
     </button>
     <button id="krypto-btn" class="pill pill-accent off" title="Krypto: din säkerhetsassistent">
-      <svg class="ic ic-sm"><use href="#i-chat" /></svg>Krypto
+      <svg class="ic ic-sm"><use href="#i-chat" /></svg>Krypto AI
     </button>
     <button id="net-btn" class="icon-btn" title="Nätverksinspektör – se all trafik">
       <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2 5 4-14 2 9h2l1-2 1 2h2"/></svg>
@@ -275,6 +275,39 @@
       #kcoach-open { flex: 1; height: 38px; border: 0; border-radius: 10px; background: var(--color-terra); color: #fff; font-weight: 700; font-size: 13.5px; cursor: pointer; }
       #kcoach-later { height: 38px; padding: 0 12px; border: 0; border-radius: 10px; background: var(--color-paper); color: var(--color-navy-900); font-weight: 600; font-size: 13px; cursor: pointer; }
     </style>
+    <!-- "Stäng alla flikar?" — ritas i sidan (DOM) och förankras uppe till höger vid stäng-krysset.
+         Ett eget OS-fönster gick inte att positionera på Wayland (setPosition är no-op där). -->
+    <style>
+      #closeconf { position: fixed; top: 100px; right: 12px; width: 320px; max-width: 88vw; z-index: 240;
+        background: #fff; border-radius: 14px; padding: 16px 18px; border: 1px solid var(--color-line, #e6ebf1);
+        box-shadow: 0 18px 50px rgba(14,42,71,.30), 0 2px 8px rgba(14,42,71,.12);
+        animation: ccpop .16s cubic-bezier(.2,.7,.2,1); }
+      @keyframes ccpop { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+      #closeconf h1 { font-size: 15px; font-weight: 700; color: var(--color-navy-900, #0e2a47); margin: 0 0 5px; letter-spacing: -.01em; }
+      #closeconf p { font-size: 13px; color: #5a6b7b; margin: 0; line-height: 1.5; }
+      #closeconf p b { color: var(--color-navy-900, #0e2a47); font-weight: 700; }
+      #closeconf label { display: flex; align-items: center; gap: 9px; margin-top: 13px; cursor: pointer; user-select: none; }
+      #closeconf label input { width: 15px; height: 15px; accent-color: var(--color-terra, #c2643f); cursor: pointer; }
+      #closeconf label span { font-size: 12.5px; color: #5a6b7b; }
+      #closeconf .row { display: flex; justify-content: flex-end; gap: 9px; margin-top: 15px; }
+      #closeconf button { height: 36px; padding: 0 18px; border-radius: 999px; font-weight: 600; font-size: 13px;
+        cursor: pointer; border: 1px solid transparent; transition: filter .15s, background .15s; }
+      #cc-cancel { background: #fff; color: var(--color-navy-900, #0e2a47); border-color: #d3dce6; }
+      #cc-cancel:hover { background: #f4f7fa; }
+      #cc-yes { background: var(--color-terra, #c2643f); color: #fff; }
+      #cc-yes:hover { filter: brightness(1.06); }
+      #closeconf button:focus-visible { outline: 2px solid var(--color-terra, #c2643f); outline-offset: 2px; }
+    </style>
+    <div id="closeconf" class="hidden">
+      <h1>Stäng alla flikar?</h1>
+      <p id="cc-msg">Du har flera flikar öppna i webbläsarfönstret.</p>
+      <label><input type="checkbox" id="cc-again" /><span>Fråga mig inte igen</span></label>
+      <div class="row">
+        <button id="cc-cancel">Avbryt</button>
+        <button id="cc-yes">Stäng alla</button>
+      </div>
+    </div>
+
     <div id="kcoach" style="display:none">
       <div id="kcoach-ring"></div>
       <div id="kcoach-card">
@@ -925,7 +958,10 @@
     <div id="history" class="hidden absolute top-0 left-0 bottom-0 bg-white" style="width:320px;z-index:65;box-shadow:6px 0 24px rgba(14,42,71,.15);">
       <div class="flex items-center justify-between px-4 h-12 border-b" style="border-color:var(--color-line);">
         <div class="flex items-center gap-2 text-[14px] font-bold text-navy-900"><svg class="ic ic-sm"><use href="#i-history" /></svg>Historik</div>
-        <button id="history-close" class="icon-btn w-8 h-8" style="color:var(--color-navy-900);"><svg class="ic ic-sm"><use href="#i-close" /></svg></button>
+        <div class="flex items-center gap-1">
+          <button id="history-clear" title="Rensa all historik" style="display:flex;align-items:center;gap:5px;height:26px;padding:0 9px;border-radius:8px;border:1px solid var(--color-line);background:#fff;color:var(--color-navy-700);font-size:12px;font-weight:700;cursor:pointer;"><svg class="ic" style="width:13px;height:13px"><use href="#i-trash" /></svg><span id="history-clear-txt">Rensa allt</span></button>
+          <button id="history-close" class="icon-btn w-8 h-8" style="color:var(--color-navy-900);"><svg class="ic ic-sm"><use href="#i-close" /></svg></button>
+        </div>
       </div>
       <div id="history-list" class="overflow-y-auto" style="height:calc(100% - 48px);"></div>
     </div>
@@ -942,6 +978,7 @@
 
   </div>
 
+  <script src="i18n.js"></script>
   <script src="shell.js"></script>
 </body>
 </html>

@@ -53,17 +53,26 @@ svg { display: block; }
   .icon-btn:active { transform: translateY(0.5px); }
   .icon-btn:disabled { opacity: .28; pointer-events: none; }
 
+  /* Profilbild i kontoknappen (annars ikonkuben #i-user vi redan har) */
+  #account-btn.has-av { padding: 0; }
+  .acct-av {
+    width: 24px; height: 24px; border-radius: 50%; object-fit: cover; display: block;
+    box-shadow: 0 0 0 1.5px rgb(255 255 255 / .65), 0 0 0 2.5px rgb(14 42 71 / .14);
+    transition: box-shadow .15s ease, transform .15s ease;
+  }
+  #account-btn.has-av:hover .acct-av { box-shadow: 0 0 0 1.5px #fff, 0 0 0 3px var(--color-terra); transform: translateY(-.5px); }
+
   /* Flikar */
   .tab {
     @apply flex items-center gap-2 min-w-0 h-9 pl-3 pr-2 rounded-[10px] cursor-default select-none text-[13px] transition-colors duration-150;
-    max-width: 220px; color: var(--color-muted); background: transparent;
+    flex: 1 1 0; min-width: 40px; max-width: 200px; color: var(--color-muted); background: transparent;
   }
   .tab:hover { background: rgb(255 255 255 / .6); color: var(--color-ink); }
   .tab.active { background: #fff; color: var(--color-navy-900); font-weight: 600; box-shadow: 0 1px 4px rgb(14 42 71 / .12); }
   .tab.entering { animation: tabIn .24s cubic-bezier(.2,.85,.25,1) both; overflow: hidden; }
   @keyframes tabIn {
     from { max-width: 0; opacity: 0; padding-left: 0; padding-right: 0; transform: translateY(3px); }
-    to   { max-width: 220px; opacity: 1; transform: none; }
+    to   { max-width: 200px; opacity: 1; transform: none; }
   }
   .tab.incognito .fav { color: #a87ee0; }
   .tab.incognito.active { background: #241442; color: #fff; box-shadow: 0 1px 4px rgb(0 0 0 / .3); }

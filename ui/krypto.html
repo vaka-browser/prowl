@@ -195,6 +195,7 @@
     <div class="foot-note">Krypto kan ha fel. Dela aldrig lösenord eller BankID.</div>
   </footer>
 
+  <script src="i18n.js"></script>
   <script>
     const $ = (id) => document.getElementById(id);
     const log = $('log'), inp = $('inp'), sendBtn = $('send');
@@ -276,7 +277,18 @@
       el.innerHTML = '<span class="av">' + (role === 'user' ? AV_USER : AV_KRYPTO) + '</span><div class="bubble"></div>';
       el.querySelector('.bubble').innerHTML = html; log.appendChild(el); scrollBottom(); return el;
     }
-    function welcome() { bubble('krypto', 'Hej! Jag är <b>Krypto</b>, din bug bounty-copilot i Prowl. ' + (MODE_INTRO[kMode] || '') + ' Byt läge med chipsen nedan — varje läge har sin egen chatt. Skriv <b>/</b> för kommandon.'); }
+    var WELCOME_PLAIN = {
+      fraga: 'Hej! Jag är Krypto, din bug bounty-copilot i Prowl. Läge: Fråga — fråga om mål, verktyg eller nästa steg i jakten. Byt läge med chipsen nedan — varje läge har sin egen chatt. Skriv / för kommandon.',
+      rapport: 'Hej! Jag är Krypto, din bug bounty-copilot i Prowl. Läge: Skriv rapport — klistra in ditt fynd (URL, request/response, vilken data) så skriver jag en färdig HackerOne-rapport. Byt läge med chipsen nedan — varje läge har sin egen chatt. Skriv / för kommandon.',
+      skicka: 'Hej! Jag är Krypto, din bug bounty-copilot i Prowl. Läge: Skicka in — klistra in din färdiga rapport så gör jag den inlämningsklar (titel, CVSS/CWE-fält, pre-submit-checklista). Byt läge med chipsen nedan — varje läge har sin egen chatt. Skriv / för kommandon.',
+      kritik: 'Hej! Jag är Krypto, din bug bounty-copilot i Prowl. Läge: Kritik — klistra in din rapport så granskar jag den hårt som en triager innan du skickar in. Byt läge med chipsen nedan — varje läge har sin egen chatt. Skriv / för kommandon.',
+    };
+    function welcome() {
+      var sv = WELCOME_PLAIN[kMode] || WELCOME_PLAIN.fraga;
+      var txt = (typeof window.t === 'function') ? window.t(sv) : sv;
+      var html = esc(txt).replace('Krypto', '<b>Krypto</b>').replace(' / ', ' <b>/</b> ');
+      bubble('krypto', html);
+    }
     function render() { log.innerHTML = ''; if (!history.length) { welcome(); return; } for (const m of history) bubble(m.role, fmt(m.content)); }
     function memCard(kind, text) {
       const el = document.createElement('div'); el.className = 'memcard' + (kind === 'del' ? ' del' : '');

@@ -1,6 +1,6 @@
 {
   "name": "prowl",
-  "version": "0.3.15",
+  "version": "0.3.34",
   "description": "Prowl – hackerutgåvan av den svenska webbläsaren",
   "main": "main.js",
   "scripts": {
@@ -20,7 +20,7 @@
   "devDependencies": {
     "@electron/packager": "^18.4.4",
     "@tailwindcss/cli": "^4.3.3",
-    "electron": "^43.4.0",
+    "electron": "github:castlabs/electron-releases#v43.2.0+wvcus",
     "electron-builder": "^24.13.3",
     "tailwindcss": "^4.3.3"
   },
@@ -74,6 +74,8 @@
       "shortcutName": "Prowl",
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico"
-    }
+    },
+    "afterPack": "build/afterPack.js",
+    "electronDist": "/home/mint/.castlabs-electron-dist"
   }
 }

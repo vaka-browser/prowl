@@ -3,6 +3,9 @@
  * kanal för att skicka chattmeddelanden — huvudprocessen lägger på kontonumret
  * och pratar med Säkerkoll-API:t, så numret behöver aldrig leva i panelen. */
 const { contextBridge, ipcRenderer } = require('electron');
+contextBridge.exposeInMainWorld('locale', {
+  load: (lang) => { try { return ipcRenderer.sendSync('i18n:load', lang) || {}; } catch { return {}; } },
+});
 contextBridge.exposeInMainWorld('krypto', {
   chat: (messages) => ipcRenderer.invoke('krypto:chat', messages),
   doAction: (a) => ipcRenderer.send('krypto:action', a),

@@ -11,3 +11,13 @@ chatgpt.com#@#+js()
 ! den LEGITIMA rendering-timeouten → sidan dör. Bara denna regel undantas;
 ! övriga annons-avväpnare (json-prune, trusted-replace m.fl.) behålls.
 www.youtube.com#@#+js(no-setTimeout-if, ()\,a\,b), 5000)
+! 2026-08-30: Netflix "laddar för evigt" — (1) adblock blockerade OneTrust cookie-consent
+! + Netflix funktionella /log; (2) scriptlets gav "Maximum call stack" (Proxy.apply-rekursion)
+! som dödade Netflix JS. Undantar netflix-essentials + stänger av scriptlets för netflix.com.
+@@||onetrust.com^$domain=netflix.com
+@@||cookielaw.org^$domain=netflix.com
+@@||nflxext.com^$domain=netflix.com
+@@||netflix.com/log/$domain=netflix.com
+@@||logs.netflix.com^$domain=netflix.com
+netflix.com#@#+js()
+www.netflix.com#@#+js()

@@ -8,7 +8,7 @@
  * per-fönster "ctx"-objekt i `wins`, nycklat på skalets webContents-id. IPC
  * routas till rätt fönster via `event.sender`.
  */
-const { app, BrowserWindow, WebContentsView, ipcMain, session, Menu, clipboard, dialog, shell, safeStorage } = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, session, Menu, clipboard, dialog, shell, safeStorage, components} = require('electron');
 app.setName('Prowl');  // egen datamapp, skild från Vaka
 const path = require('path');
 const fs = require('fs');
@@ -34,11 +34,22 @@ const NET_H = 340;          // nätverksinspektörens dockade höjd
 const NET_MAX = 800;        // max antal requests i bufferten per fönster
 const wins = new Map();                 // skalets webContents-id -> ctx
 
+/* ────────── Minnesbesparing (Memory Saver) ──────────
+ * Chromium drar mycket RAM eftersom varje flik får en egen renderer-process.
+ * 1) Vi stänger av oanvända delsystem (översättning, mediarouter, hints).
+ * 2) Inaktiva bakgrundsflikar "kastas" efter en stund: renderer-processen rivs
+ *    och endast URL:en sparas; fliken återuppstår vid klick (discardTab/sweep). */
+app.commandLine.appendSwitch('disable-features', 'Translate,MediaRouter,DialMediaRouteProvider,OptimizationHints');
+const DISCARD_MS = Number(process.env.TAB_DISCARD_MS) || 10 * 60 * 1000;  // kasta flik efter 10 min ledig
+const DISCARD_SWEEP_MS = 60 * 1000;                                       // svep varje minut
+
 function makeCtx(win, incognito) {
   return {
     win, incognito: !!incognito,
     views: new Map(),                   // tabId -> WebContentsView
     incognitoTabs: new Set(),           // tabId:er som kör efemär (inkognito) session
+    discarded: new Map(),               // tabId -> url för kastade (RAM-frigjorda) flikar
+    lastActive: new Map(),              // tabId -> tidsstämpel senast synlig (för discard-svep)
     visibleTab: null,
     bounds: { x: 0, y: 96, width: 1280, height: 700 },
     topInset: 0, leftInset: 0, defaultZoom: 1,
@@ -50,34 +61,42 @@ function makeCtx(win, incognito) {
 function ctxFor(event) { return wins.get(event.sender.id); }
 function sendTo(ctx, ...a) { if (ctx && ctx.win && !ctx.win.isDestroyed()) ctx.win.webContents.send(...a); }
 function broadcast(...a) { wins.forEach((ctx) => sendTo(ctx, ...a)); if (a[0] === 'download-update') pushDownloadPopups(); }
+/* Nedladdnings-popup = WebContentsView OVANPÅ fliken (ej separat fönster: Wayland kan ej
+ * positionera fönster; ej DOM-overlay: flikens native-vy ritas ovanpå skalets HTML och skulle
+ * dölja den). En child-vy positioneras med setBounds relativt fönstret → funkar på Wayland. */
+const DL_W = 392;
 function pushDownloadPopups() {
-  wins.forEach((ctx) => { if (ctx.dlWin && !ctx.dlWin.isDestroyed()) ctx.dlWin.webContents.send('dl-data', downloads); });
+  wins.forEach((ctx) => { if (ctx.dlView && !ctx.dlView.webContents.isDestroyed()) ctx.dlView.webContents.send('dl-data', downloads); });
 }
-function positionDlPopup(ctx) {
-  if (!ctx || !ctx.dlWin || ctx.dlWin.isDestroyed() || !ctx.win || ctx.win.isDestroyed()) return;
-  const cb = ctx.win.getContentBounds(); const w = 380;
-  try { ctx.dlWin.setPosition(cb.x + cb.width - w - 10, cb.y + 96); } catch {}
+function positionDlPopup(ctx, h) {
+  if (!ctx || !ctx.dlView || !ctx.win || ctx.win.isDestroyed()) return;
+  const cb = ctx.win.getContentBounds();
+  if (typeof h === 'number') ctx._dlH = h;
+  const top = Math.max(0, Math.round((ctx.topInset || 92) + 6));
+  const height = Math.max(70, Math.min(ctx._dlH || 200, cb.height - top - 12));
+  try { ctx.dlView.setBounds({ x: Math.round(cb.width - DL_W - 8), y: top, width: DL_W, height }); } catch {}
+}
+function closeDlPopup(ctx) {
+  if (!ctx || !ctx.dlView) return;
+  try { ctx.win.contentView.removeChildView(ctx.dlView); } catch {}
+  try { ctx.dlView.webContents.close(); } catch {}
+  if (ctx._dlRepos) { try { ctx.win.removeListener('resize', ctx._dlRepos); ctx.win.removeListener('move', ctx._dlRepos); } catch {} ctx._dlRepos = null; }
+  ctx.dlView = null;
 }
 function openDlPopup(ctx) {
   if (!ctx || !ctx.win || ctx.win.isDestroyed()) return;
-  if (ctx.dlWin && !ctx.dlWin.isDestroyed()) { positionDlPopup(ctx); ctx.dlWin.webContents.send('dl-data', downloads); return; }
-  const cb = ctx.win.getContentBounds(); const w = 380, h = 470;
-  const cw = new BrowserWindow({
-    parent: ctx.win, frame: false, transparent: true, backgroundColor: '#00000000',
-    resizable: false, movable: false, minimizable: false, maximizable: false,
-    skipTaskbar: true, hasShadow: false, show: false, width: w, height: h,
-    x: cb.x + cb.width - w - 10, y: cb.y + 96,
-    webPreferences: { nodeIntegration: true, contextIsolation: false },
-  });
-  ctx.dlWin = cw;
+  if (ctx.dlView) { try { ctx.win.contentView.addChildView(ctx.dlView); } catch {} positionDlPopup(ctx); ctx.dlView.webContents.send('dl-data', downloads); return; }  // redan öppen → höj + uppdatera
+  const view = new WebContentsView({ webPreferences: { nodeIntegration: true, contextIsolation: false } });
+  try { view.setBackgroundColor('#00000000'); } catch {}
+  ctx.dlView = view;
+  ctx._dlH = 200;
+  ctx.win.contentView.addChildView(view);
+  positionDlPopup(ctx);
   const repos = () => positionDlPopup(ctx);
-  ctx.win.on('move', repos); ctx.win.on('resize', repos);
-  cw.loadFile(path.join(__dirname, 'ui', 'downloads.html'));
-  cw.webContents.on('did-finish-load', () => { cw.webContents.send('dl-data', downloads); cw.showInactive(); });
-  cw.on('closed', () => {
-    try { ctx.win.removeListener('move', repos); ctx.win.removeListener('resize', repos); } catch {}
-    if (ctx.dlWin === cw) ctx.dlWin = null;
-  });
+  ctx._dlRepos = repos;
+  ctx.win.on('resize', repos); ctx.win.on('move', repos);
+  view.webContents.loadFile(path.join(__dirname, 'ui', 'downloads.html'));
+  view.webContents.on('did-finish-load', () => { view.webContents.send('dl-data', downloads); });
 }
 
 /* ────────── Adblocker (kurerad värdlista – demo) ────────── */
@@ -111,33 +130,71 @@ let engine = null;
 let engineReady = null;
 const blockedSessions = new Set();
 
+// Cache för färdigbyggd filtermotor. Att parsa de ~13 MB listorna tar ~1 s (mer på
+// svaga datorer) OCH är synkront → fryser huvudtråden vid start. Vi serialiserar motorn
+// till disk och deserialiserar den vid nästa start (~17 ms), invaliderad via ett
+// fingeravtryck (adblocker-version + filstorlek/mtime + felsökningsflaggor).
+function engineCachePaths() {
+  const base = app.getPath('userData');
+  return { bin: path.join(base, 'filters-engine.bin'), meta: path.join(base, 'filters-engine.meta') };
+}
+function filtersFingerprint(dir, files) {
+  const parts = ['v2'];
+  try { parts.push(require('@ghostery/adblocker-electron/package.json').version); } catch {}
+  // Felsökningsflaggorna ändrar det parsade resultatet → måste in i fingeravtrycket.
+  parts.push('cos:' + (process.env.VAKA_NO_COSMETICS ? '0' : '1'));
+  parts.push('drop:' + (process.env.VAKA_FILTER_DROP || ''));
+  for (const f of files) { try { const st = fs.statSync(path.join(dir, f)); parts.push(f + ':' + st.size + ':' + Math.round(st.mtimeMs)); } catch {} }
+  return parts.join('|');
+}
+function attachResources(dir) {   // scriptlet-resurser (~2 ms): window.open-defuser m.fl. Sätts alltid, även från cache.
+  try {
+    const { Resources } = require('@ghostery/adblocker-electron');
+    const resTxt = fs.readFileSync(path.join(dir, 'resources.txt'), 'utf8');
+    engine.resources = Resources.parse(resTxt, { checksum: 'vaka' });
+  } catch {}
+}
+
 function loadEngine() {
   if (engineReady) return engineReady;
   engineReady = (async () => {
     if (!ElectronBlocker) return;
+    // Släpp fram fönstrets FÖRSTA målning innan den tunga parsningen — annars fryser
+    // huvudtråden i ~1 s (flera sekunder på svaga datorer) och skalet står vitt "jättelänge".
+    await new Promise((r) => setImmediate(r));
     try {
       // Medföljande filterlistor (uBlock + AdGuard-settet) — parsas lokalt, ingen nätverkshämtning.
       const dir = path.join(__dirname, 'filters');
       let files = [];
       try { files = fs.readdirSync(dir).filter((f) => f.endsWith('.txt') && f !== 'resources.txt'); } catch {}
-      let text = files
-        .map((f) => { try { return fs.readFileSync(path.join(dir, f), 'utf8'); } catch { return ''; } })
-        .join('\n');
-      if (process.env.VAKA_FILTER_DROP) {
-        const re = new RegExp(process.env.VAKA_FILTER_DROP);
-        text = text.split('\n').filter((l) => !re.test(l)).join('\n');
+      const { bin, meta } = engineCachePaths();
+      const fp = filtersFingerprint(dir, files);
+      // 1) Snabb väg: läs färdigbyggd motor från cache (~17 ms mot ~1000+ ms parse).
+      let loaded = false;
+      try {
+        if (fs.existsSync(bin) && fs.existsSync(meta) && fs.readFileSync(meta, 'utf8') === fp) {
+          engine = ElectronBlocker.deserialize(fs.readFileSync(bin));
+          loaded = true;
+        }
+      } catch { engine = null; loaded = false; }
+      // 2) Långsam väg: parsa listorna och spara cachen till nästa start.
+      if (!loaded) {
+        let text = files
+          .map((f) => { try { return fs.readFileSync(path.join(dir, f), 'utf8'); } catch { return ''; } })
+          .join('\n');
+        if (process.env.VAKA_FILTER_DROP) {
+          const re = new RegExp(process.env.VAKA_FILTER_DROP);
+          text = text.split('\n').filter((l) => !re.test(l)).join('\n');
+        }
+        if (!text.trim()) {
+          engine = await ElectronBlocker.fromPrebuiltAdsAndTracking(globalThis.fetch || require('cross-fetch'));
+        } else {
+          // loadCosmeticFilters => element-göm + scriptlet-injektion (pop-under-/redirect-motgifter à la uBlock/Brave)
+          engine = ElectronBlocker.parse(text, { loadCosmeticFilters: process.env.VAKA_NO_COSMETICS ? false : true, loadNetworkFilters: true });
+          try { fs.writeFileSync(bin, Buffer.from(engine.serialize())); fs.writeFileSync(meta, fp); } catch {}
+        }
       }
-      if (!text.trim()) {
-        engine = await ElectronBlocker.fromPrebuiltAdsAndTracking(globalThis.fetch || require('cross-fetch'));
-      } else {
-        // loadCosmeticFilters => element-göm + scriptlet-injektion (pop-under-/redirect-motgifter à la uBlock/Brave)
-        engine = ElectronBlocker.parse(text, { loadCosmeticFilters: process.env.VAKA_NO_COSMETICS ? false : true, loadNetworkFilters: true });
-        try {
-          const { Resources } = require('@ghostery/adblocker-electron');
-          const resTxt = fs.readFileSync(path.join(dir, 'resources.txt'), 'utf8');
-          engine.resources = Resources.parse(resTxt, { checksum: 'vaka' });   // 149 scriptlets: window.open-defuser m.fl.
-        } catch {}
-      }
+      attachResources(dir);   // 149 scriptlets — garanterat satta oavsett cache/parse
       engine.on('request-blocked', (request) => {
         adblockCount++;
         broadcast('adblock:count', adblockCount);
@@ -290,9 +347,47 @@ function applyBounds(ctx) {
 }
 function raiseKrypto(ctx) { if (ctx && ctx.kryptoView) ctx.win.contentView.addChildView(ctx.kryptoView); }
 function showOnly(ctx, tabId) {
+  const now = Date.now();
+  if (ctx.visibleTab && ctx.visibleTab !== tabId) ctx.lastActive.set(ctx.visibleTab, now); // starta ledig-klockan för fliken vi lämnar
   ctx.visibleTab = tabId;
+  ctx.lastActive.set(tabId, now);
   ctx.views.forEach((v, id) => v.setVisible(id === tabId));
   applyBounds(ctx); raiseKrypto(ctx);
+}
+/* Kasta en dold, oanvänd flik: riv WebContentsView (frigör renderer-processen)
+ * och minns bara URL:en. Ljudande flikar och inkognito lämnas ifred. */
+function discardTab(ctx, tabId) {
+  const v = ctx.views.get(tabId);
+  if (!v || tabId === ctx.visibleTab || ctx.incognitoTabs.has(tabId)) return;
+  const wc = v.webContents;
+  try { if (wc.isCurrentlyAudible()) return; } catch {}   // spelar ljud (musik/video) → lämna ifred
+  let url = ''; try { url = wc.getURL() || ''; } catch {}
+  if (!/^https?:/i.test(url)) return;                      // bara riktiga webbsidor kan återuppstå
+  ctx.discarded.set(tabId, url);
+  try { ctx.win.contentView.removeChildView(v); } catch {}
+  try { wc.close(); } catch {}
+  ctx.views.delete(tabId); ctx.lastActive.delete(tabId);
+  sendTo(ctx, 'tab-discarded', tabId);                     // skalet kan grå-markera fliken (valfritt)
+}
+/* Återuppliva en kastad flik: skapa vyn igen och ladda om sparad URL. */
+function rehydrate(ctx, tabId) {
+  const url = ctx.discarded.get(tabId);
+  ctx.discarded.delete(tabId);
+  const view = ensureView(ctx, tabId);
+  if (url) { try { view.webContents.loadURL(url).catch(() => {}); } catch {} }
+  return view;
+}
+/* Svep: kasta varje dold flik som legat oanvänd längre än DISCARD_MS. */
+function sweepIdleTabs() {
+  const now = Date.now();
+  wins.forEach((ctx) => {
+    if (!ctx || !ctx.views) return;
+    ctx.views.forEach((_v, id) => {
+      if (id === ctx.visibleTab) return;
+      const last = ctx.lastActive.get(id) || now;
+      if (now - last >= DISCARD_MS) discardTab(ctx, id);
+    });
+  });
 }
 /* ── Högerklicksmeny (Chromium-lik) ── */
 async function savePage(ctx, wc) {
@@ -515,11 +610,15 @@ function keyHash(k) { return crypto.createHash('sha1').update(String(k || '')).d
 function pwFileFor(key) { return path.join(PW_DIR, 'pw-' + keyHash(key) + '.json'); }
 function loadPw() {
   if (!currentAcctKey) return [];                                             // utloggad → lösenord låsta
-  try { return JSON.parse(fs.readFileSync(pwFileFor(currentAcctKey), 'utf8')); } catch { return []; }
+  let buf; try { buf = fs.readFileSync(pwFileFor(currentAcctKey)); } catch { return []; }
+  try { return JSON.parse(walletDecrypt(buf)); } catch {}                     // E2E-krypterat valv (nytt format)
+  try { const l = JSON.parse(buf.toString('utf8')); savePwList(l); return l; } catch {}  // legacy klartext → migrera till krypterat direkt
+  return [];
 }
 function savePwList(l) {
   if (!currentAcctKey) return;
-  try { fs.mkdirSync(PW_DIR, { recursive: true }); fs.writeFileSync(pwFileFor(currentAcctKey), JSON.stringify(l), { mode: 0o600 }); } catch {}
+  // E2E-krypterat på enheten (AES-256-GCM med samma nyckelrings-nyckel som plånboken)
+  try { fs.mkdirSync(PW_DIR, { recursive: true }); fs.writeFileSync(pwFileFor(currentAcctKey), walletEncrypt(JSON.stringify(l)), { mode: 0o600 }); } catch {}
 }
 ipcMain.handle('pw:list', () => loadPw());
 ipcMain.handle('pw:get', (_e, origin) => loadPw().find((p) => p.origin === origin) || null);
@@ -556,8 +655,10 @@ async function restoreAccountCookies(key) {
     try {
       const host = (c.domain || '').replace(/^\./, '');
       if (!host || !c.name) continue;
-      const set = { url: (c.secure ? 'https://' : 'http://') + host + (c.path || '/'), name: c.name, value: c.value, path: c.path || '/' };
-      if (c.domain) set.domain = c.domain;
+      const set = { url: 'https://' + host + (c.path || '/')/* alltid https: Google m.fl. sätter alla sina cookies över https; http:// skulle binda dem till fel source-scheme (schemeful same-site) och bryta inloggningen */, name: c.name, value: c.value, path: c.path || '/' };
+      // __Host-/__Secure-prefix + host-only cookies (t.ex. Googles __Host-GAPS) FÖRKASTAS av Chromium om de får ett Domain-attribut → sätt domain BARA för äkta domän-cookies.
+      const isHostOnly = c.hostOnly || /^__Host-/i.test(c.name);
+      if (c.domain && !isHostOnly) set.domain = c.domain;
       if (c.secure) set.secure = true;
       if (c.httpOnly) set.httpOnly = true;
       if (typeof c.expirationDate === 'number') set.expirationDate = c.expirationDate;
@@ -567,6 +668,35 @@ async function restoreAccountCookies(key) {
   }
 }
 async function clearWebSession() { try { await session.defaultSession.clearStorageData(); } catch {} }
+
+// Engangsstadning (0.3.50): versioner <=0.3.48 kunde binda Googles icke-Secure auth-cookies
+// (SID/HSID/APISID) till fel source-scheme (http/port 80) vid konto-aterstallning -> Google
+// visade "problem med dina cookie-installningar". Rensa Google-cookies EN gang sa de satts
+// rena vid nasta inloggning. Ror bara google-doman + snapshots, ALDRIG localStorage-inlogg.
+async function migrateGoogleCookieFix() {
+  try {
+    const marker = path.join(app.getPath('userData'), 'migr-google-cookies-v1.done');
+    if (fs.existsSync(marker)) return;
+    const isGoogle = (d) => /(^|\.)google\.[a-z.]{2,}$/i.test(d || '');
+    try {
+      const all = await session.defaultSession.cookies.get({});
+      for (const c of all) {
+        if (!isGoogle(c.domain)) continue;
+        const host = (c.domain || '').replace(/^\./, '');
+        try { await session.defaultSession.cookies.remove('https://' + host + (c.path || '/'), c.name); } catch {}
+      }
+    } catch {}
+    try {
+      for (const f of fs.readdirSync(COOKIE_DIR)) {
+        if (!f.startsWith('ck-')) continue;
+        const p = path.join(COOKIE_DIR, f);
+        try { const arr = JSON.parse(fs.readFileSync(p, 'utf8')); fs.writeFileSync(p, JSON.stringify(arr.filter((c) => !isGoogle(c.domain)))); } catch {}
+      }
+    } catch {}
+    try { fs.writeFileSync(marker, new Date().toISOString()); } catch {}
+  } catch {}
+}
+
 function reloadVisible(ctx) { try { if (ctx && ctx.visibleTab && ctx.views.has(ctx.visibleTab)) ctx.views.get(ctx.visibleTab).webContents.reload(); } catch {} }
 function migratePwLegacy(key) {   // första inloggningen: flytta ev. gamla (icke-konto) lösenord in i kontot
   try { if (!fs.existsSync(pwFileFor(key)) && fs.existsSync(PW_FILE)) { fs.mkdirSync(PW_DIR, { recursive: true }); fs.copyFileSync(PW_FILE, pwFileFor(key)); } } catch {}
@@ -591,6 +721,21 @@ ipcMain.on('pw:capture', (e, c) => {
   if (l.find((p) => p.origin === c.origin && p.username === c.username && p.password === c.password)) return;
   sendTo(e.sender.__ctx, 'pw-offer', c);   // erbjud i fönstret där sidan ligger
 });
+
+/* ── Språk för UI som ritas utanför skalet (t.ex. kortväljaren i sidan) ──
+ * Skalet laddar sin ordlista via i18n:load – vi snappar upp språket där och
+ * kan sedan översätta enstaka strängar här i huvudprocessen. Svenska = nyckeln. */
+let uiLang = 'sv';
+const _dicts = new Map();
+function localeDict(code) {
+  if (!code || code === 'sv') return {};
+  if (_dicts.has(code)) return _dicts.get(code);
+  let d = {};
+  try { d = JSON.parse(fs.readFileSync(path.join(__dirname, 'ui', 'locales', code + '.json'), 'utf8')); } catch {}
+  _dicts.set(code, d);
+  return d;
+}
+function trUi(sv) { const v = localeDict(uiLang)[sv]; return v == null ? sv : v; }
 
 /* ── Vaka Wallet (kort-plånbok, E2E-krypterad på enheten) ──
  * Zero-knowledge: korten lämnar ALDRIG datorn. På disk ligger bara chiffertext
@@ -665,6 +810,16 @@ ipcMain.handle('wallet:save', (_e, c) => {
   saveCards(l); return { ok: true, id: rec.id };
 });
 ipcMain.handle('wallet:delete', (_e, id) => { saveCards(loadCards().filter((c) => c.id !== id)); return { ok: true }; });
+/* Kortväljaren i sidan frågar efter listan (publik vy) + översatta etiketter.
+ * Sidans preload har ingen tillgång till skalets språkval, så vi översätter här. */
+ipcMain.handle('wallet:menu', () => ({
+  cards: loadCards().map(cardPublic),
+  labels: { choose: trUi('Välj kort'), manage: trUi('Hantera kort'), exp: trUi('Giltigt till') },
+}));
+/* "Hantera kort" i väljaren → öppna Wallet i inställningarna. */
+ipcMain.on('wallet:open-manager', (e) => {
+  try { const ctx = e.sender.__ctx || ctxFor(e); if (ctx) sendTo(ctx, 'open-settings', 'wallet'); } catch {}
+});
 /* Sida upptäckte ett kassaformulär → erbjud autofyll (om vi har kort). */
 ipcMain.on('wallet:field-detected', (e) => {
   try { if (!loadCards().length) return; const ctx = e.sender.__ctx; if (!ctx) return; ctx._walletFillWc = e.sender; sendTo(ctx, 'wallet-fill-offer', loadCards().map(cardPublic)); } catch {}
@@ -779,8 +934,9 @@ function trackDownloads(sess) {
   });
 }
 ipcMain.handle('dl:list', () => downloads);
-ipcMain.on('dl:popup-toggle', (e) => { const ctx = wins.get(e.sender.id); if (!ctx) return; if (ctx.dlWin && !ctx.dlWin.isDestroyed()) ctx.dlWin.close(); else openDlPopup(ctx); });
-ipcMain.on('dl:popup-close', (e) => { const cw = BrowserWindow.fromWebContents(e.sender); if (cw && !cw.isDestroyed()) cw.close(); });
+ipcMain.on('dl:popup-toggle', (e) => { const ctx = wins.get(e.sender.id); if (!ctx) return; if (ctx.dlView) closeDlPopup(ctx); else openDlPopup(ctx); });
+ipcMain.on('dl:popup-close', (e) => { const ctx = [...wins.values()].find((c) => c.dlView && !c.dlView.webContents.isDestroyed() && c.dlView.webContents === e.sender); if (ctx) closeDlPopup(ctx); });
+ipcMain.on('dl:popup-size', (e, h) => { const ctx = [...wins.values()].find((c) => c.dlView && !c.dlView.webContents.isDestroyed() && c.dlView.webContents === e.sender); if (ctx && typeof h === 'number') positionDlPopup(ctx, Math.round(h)); });
 ipcMain.on('dl:open', (_e, id) => { const r = downloads.find((d) => d.id === id); if (r && r.state !== 'infected' && r.state !== 'deleted') shell.openPath(r.path).catch(() => {}); });
 ipcMain.on('dl:folder', (_e, id) => { const r = downloads.find((d) => d.id === id); if (r && r.state !== 'infected' && r.state !== 'deleted') shell.showItemInFolder(r.path); });
 ipcMain.on('dl:remove-threat', (_e, id) => {
@@ -795,8 +951,8 @@ ipcMain.on('dl:keep-anyway', (_e, id) => {
 });
 
 /* ────────── IPC – per fönster (routas via event.sender) ────────── */
-ipcMain.on('view:load', (e, tabId, url) => { const ctx = ctxFor(e); if (!ctx) return; ensureView(ctx, tabId).webContents.loadURL(url).catch(() => {}); showOnly(ctx, tabId); });
-ipcMain.on('view:show', (e, tabId) => { const ctx = ctxFor(e); if (ctx) showOnly(ctx, tabId); });
+ipcMain.on('view:load', (e, tabId, url) => { const ctx = ctxFor(e); if (!ctx) return; ctx.discarded.delete(tabId); ensureView(ctx, tabId).webContents.loadURL(url).catch(() => {}); showOnly(ctx, tabId); });
+ipcMain.on('view:show', (e, tabId) => { const ctx = ctxFor(e); if (!ctx) return; if (ctx.discarded.has(tabId)) rehydrate(ctx, tabId); showOnly(ctx, tabId); });
 ipcMain.on('view:hide', (e) => { const ctx = ctxFor(e); if (!ctx) return; ctx.views.forEach((v) => v.setVisible(false)); ctx.visibleTab = null; });
 ipcMain.on('view:bounds', (e, r) => { const ctx = ctxFor(e); if (ctx) { ctx.bounds = r; applyBounds(ctx); } });
 ipcMain.on('view:inset-top', (e, px) => { const ctx = ctxFor(e); if (ctx) { ctx.topInset = Math.max(0, px | 0); applyBounds(ctx); } });
@@ -819,11 +975,18 @@ ipcMain.on('view:destroy', (e, id) => {
   const ctx = ctxFor(e); if (!ctx) return;
   const v = ctx.views.get(id);
   if (v) { try { ctx.win.contentView.removeChildView(v); } catch {} try { v.webContents.close(); } catch {} ctx.views.delete(id); }
-  ctx.incognitoTabs.delete(id);
+  ctx.incognitoTabs.delete(id); ctx.discarded.delete(id); ctx.lastActive.delete(id);
   if (ctx.visibleTab === id) ctx.visibleTab = null;
 });
 ipcMain.on('app:fullscreen', (e) => { const ctx = ctxFor(e); if (ctx) ctx.win.setFullScreen(!ctx.win.isFullScreen()); });
 ipcMain.on('app:quit', () => app.quit());
+ipcMain.on('i18n:load', (e, lang) => {
+  try {
+    const code = String(lang || '').replace(/[^a-zA-Z-]/g, '');
+    e.returnValue = localeDict(code);
+    uiLang = code;                        // skalets språkval – används av trUi() för sid-UI (kortväljaren)
+  } catch { e.returnValue = {}; }
+});
 ipcMain.on('win:do-close', (e) => {
   const ctx = wins.get(e.sender.id); if (ctx) ctx.forceClose = true;
   const w = BrowserWindow.fromWebContents(e.sender); if (w) w.close();
@@ -836,16 +999,27 @@ ipcMain.on('open-close-confirm', (e, count) => {
   if (ctx.confirmWin && !ctx.confirmWin.isDestroyed()) { ctx.confirmWin.focus(); return; }
   const cb = parent.getContentBounds();
   const w = 372, h = 210;
+  const cx = Math.round(cb.x + cb.width - w - 14), cy = Math.round(cb.y + 92);
   const cw = new BrowserWindow({
     icon: path.join(__dirname, 'build', 'icon.png'),
     parent, frame: false, transparent: true, backgroundColor: '#00000000',
-    resizable: false, movable: false, minimizable: false, maximizable: false,
-    skipTaskbar: true, hasShadow: false, width: w, height: h,
-    x: cb.x + cb.width - w - 14, y: cb.y + 92,
+    resizable: false, movable: true, minimizable: false, maximizable: false,
+    skipTaskbar: true, hasShadow: false, show: false, opacity: 0, width: w, height: h,
+    x: cx, y: cy,
     webPreferences: { nodeIntegration: true, contextIsolation: false },
   });
   ctx.confirmWin = cw;
   cw.loadFile(path.join(__dirname, 'ui', 'confirm.html'), { query: { n: String(count || 0) } });
+  // X11/Muffin ignorerar positionen tills fönstret är mappat (annars fastnar det i 0,0 uppe
+  // till vänster). Kräver movable:true. Visa dolt, positionera med omförsök och tona in vid
+  // stäng-krysset uppe till höger.
+  cw.webContents.on('did-finish-load', () => {
+    cw.show();
+    const place = () => { if (!cw.isDestroyed()) { try { cw.setPosition(cx, cy); } catch {} } };
+    place();
+    [60, 160, 300].forEach((t) => setTimeout(place, t));
+    setTimeout(() => { if (!cw.isDestroyed()) { try { cw.setOpacity(1); } catch {} } }, 300);
+  });
   cw.on('closed', () => { if (ctx.confirmWin === cw) ctx.confirmWin = null; });
 });
 ipcMain.on('close-confirm-done', (e, res) => {
@@ -1140,7 +1314,15 @@ if (!app.requestSingleInstanceLock()) {
   });
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // [widevine-init] Widevine DRM (Netflix/Spotify/HBO m.fl.). castlabs-Electron laddar CDM:en vid start.
+  try {
+    if (components && components.whenReady) {
+      await components.whenReady();
+      console.log('[widevine]', components.status && JSON.stringify(components.status()));
+    }
+  } catch (e) { console.error('[widevine] init misslyckades:', e && e.message); }
+  setInterval(sweepIdleTabs, DISCARD_SWEEP_MS).unref();   // kasta lediga bakgrundsflikar löpande
   // Presentera oss som vanlig Chrome — annars ser sajter (t.ex. Google) "Electron"
   // + appnamnet i user-agent och tror att det är en bot ("unusual traffic").
   try {
@@ -1153,6 +1335,7 @@ app.whenReady().then(() => {
   applyClientHints(session.defaultSession);
   installAdblockOn(session.defaultSession);
   trackDownloads(session.defaultSession);
+  migrateGoogleCookieFix();
   // Ingen OS-menyrad (File/Edit/View…) i fönstret — webbläsaren har sin egen ≡-meny.
   // På macOS behålls en riktig meny (systemets menyrad + Cmd+C/V/A m.m.).
   try {

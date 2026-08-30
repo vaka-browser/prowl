@@ -1,0 +1,17 @@
+[
+"Hej! Jag är Krypto, din bug bounty-copilot i Prowl. Läge: Fråga — fråga om mål, verktyg eller nästa steg i jakten. Byt läge med chipsen nedan — varje läge har sin egen chatt. Skriv / för kommandon.",
+"Hej! Jag är Krypto, din bug bounty-copilot i Prowl. Läge: Skriv rapport — klistra in ditt fynd (URL, request/response, vilken data) så skriver jag en färdig HackerOne-rapport. Byt läge med chipsen nedan — varje läge har sin egen chatt. Skriv / för kommandon.",
+"Hej! Jag är Krypto, din bug bounty-copilot i Prowl. Läge: Skicka in — klistra in din färdiga rapport så gör jag den inlämningsklar (titel, CVSS/CWE-fält, pre-submit-checklista). Byt läge med chipsen nedan — varje läge har sin egen chatt. Skriv / för kommandon.",
+"Hej! Jag är Krypto, din bug bounty-copilot i Prowl. Läge: Kritik — klistra in din rapport så granskar jag den hårt som en triager innan du skickar in. Byt läge med chipsen nedan — varje läge har sin egen chatt. Skriv / för kommandon.",
+"Rensa allt",
+"Rensa allt?",
+"Rensa all historik",
+"Ta bort från historiken",
+"Historiken är rensad.",
+"Din historik sparas åt dina föräldrar och kan inte tas bort här.",
+"Bara föräldern kan rensa historiken.",
+"Surfdata rensad – historiken sparas åt dina föräldrar.",
+"Välj kort",
+"Hantera kort",
+"Giltigt till"
+]

@@ -507,7 +507,13 @@ function ensureView(ctx, tabId) {
     if (adblockOn && (!/^https?:/i.test(url) || isBlockedTarget(url, wc.getURL()))) {
       return { action: 'deny' };                                  // annons/pop-under/skräp-schema → död
     }
-    if (url) sendTo(ctx, 'open-new-tab', url);                     // äkta ny flik (Ctrl/mitten-klick, target=_blank, window.open)
+    // Äkta popup (t.ex. "Logga in med Google"/OAuth) öppnas med window.open + fönster-features.
+    // Måste öppnas som RIKTIGT popup-fönster med window.opener bevarad + delad session,
+    // annars svarar Google "This page must be opened as a popup" och inloggningen dör.
+    if (details.disposition === 'new-window' || (details.features && details.features.length)) {
+      return { action: 'allow', overrideBrowserWindowOptions: { width: 520, height: 680, resizable: true, autoHideMenuBar: true } };
+    }
+    if (url) sendTo(ctx, 'open-new-tab', url);                     // vanlig ny flik (Ctrl/mitten-klick, target=_blank)
     return { action: 'deny' };
   });
   wc.on('will-navigate', (e, url) => {

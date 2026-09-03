@@ -1,7 +1,7 @@
 {
   "name": "prowl",
-  "version": "0.3.36",
-  "description": "Prowl – hackerutgåvan av den svenska webbläsaren",
+  "version": "0.3.37",
+  "description": "Prowl \u2013 hackerutg\u00e5van av den svenska webbl\u00e4saren",
   "main": "main.js",
   "scripts": {
     "start": "electron . --no-sandbox",

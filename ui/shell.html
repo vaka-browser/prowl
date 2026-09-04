@@ -96,7 +96,7 @@
       <svg class="ic ic-sm"><use href="#i-ban" /></svg><span id="adcount" class="tabular-nums">0</span>
     </button>
     <button id="krypto-btn" class="pill pill-accent off" title="Krypto: din säkerhetsassistent">
-      <svg class="ic ic-sm"><use href="#i-chat" /></svg>Krypto AI
+      <img src="krypto-owl-face.png" alt="" style="width:18px;height:18px;object-fit:contain;flex:none;">Krypto AI
     </button>
     <button id="net-btn" class="icon-btn" title="Nätverksinspektör – se all trafik">
       <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2 5 4-14 2 9h2l1-2 1 2h2"/></svg>
@@ -657,29 +657,38 @@
     </div>
 
     <!-- Inställningar (full sida med sidomeny) -->
-    <div id="settings" class="hidden absolute inset-0 z-[70] grid place-items-center p-6" style="background:linear-gradient(160deg,#0e2a47,#14375c);">
-      <div class="w-full bg-white rounded-[20px] relative overflow-hidden flex shadow-[0_30px_80px_rgba(0,0,0,.45)]" style="max-width:920px; height:82%;">
-        <button id="settings-close" class="absolute top-4 right-4 icon-btn w-8 h-8 z-20" style="color:var(--color-navy-900);"><svg class="ic ic-sm"><use href="#i-close" /></svg></button>
-        <div class="flex-none w-[224px] py-6 px-3 border-r flex flex-col" style="border-color:var(--color-line); background:var(--color-paper);">
-          <div class="px-3 mb-4 text-[16px] font-extrabold text-navy-900">Inställningar</div>
+    <div id="settings" class="hidden absolute inset-0 z-[70] set-shell">
+      <button id="settings-close" class="set-close icon-btn w-9 h-9 z-20" title="Stäng"><svg class="ic ic-sm"><use href="#i-close" /></svg></button>
+      <aside class="set-rail">
+        <div class="set-brand"><svg class="ic" viewBox="0 0 24 24"><use href="#i-settings" /></svg>Inställningar</div>
           <nav id="settings-nav" class="flex flex-col gap-0.5">
-            <button class="set-tab" data-cat="utseende"><svg class="ic"><use href="#i-image" /></svg>Utseende</button>
-            <button class="set-tab" data-cat="sok"><svg class="ic"><use href="#i-globe" /></svg>Sökmotor</button>
-            <button class="set-tab" data-cat="integritet"><svg class="ic"><use href="#i-shield" /></svg>Integritet &amp; säkerhet</button>
-            <button class="set-tab" data-cat="krypto"><svg class="ic"><use href="#i-chat" /></svg>Krypto</button>
-            <button class="set-tab" data-cat="tillagg"><svg class="ic"><use href="#i-settings" /></svg>Tillägg</button>
-            <button class="set-tab" data-cat="losenord"><svg class="ic"><use href="#i-key" /></svg>Autofyll &amp; lösenord</button>
-            <button class="set-tab" data-cat="konto"><svg class="ic"><use href="#i-user" /></svg>Konto</button>
-            <button class="set-tab" data-cat="vanner"><svg class="ic"><use href="#i-chat" /></svg>Vänner &amp; chatt</button>
-            <button class="set-tab" data-cat="wallet"><svg class="ic"><use href="#i-card" /></svg>Prowl Wallet</button>
-            <button class="set-tab" data-cat="kalender"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="2"/><path d="M16 2.5v4M8 2.5v4M3 10h18"/></svg>Prowl Calendar</button>
-            <button class="set-tab" data-cat="nedladdningar"><svg class="ic"><use href="#i-download" /></svg>Nedladdningar</button>
-            <button class="set-tab" data-cat="sprak"><svg class="ic"><use href="#i-globe" /></svg>Språk</button>
-            <button class="set-tab" data-cat="tillganglighet"><svg class="ic"><use href="#i-eye" /></svg>Tillgänglighet</button>
-            <button class="set-tab" data-cat="om"><svg class="ic"><use href="#i-shield-check" /></svg>Om</button>
+            <button class="set-tab" style="--i:1" data-cat="utseende"><svg class="ic"><use href="#i-image" /></svg>Utseende</button>
+            <button class="set-tab" style="--i:2" data-cat="sok"><svg class="ic"><use href="#i-globe" /></svg>Sökmotor</button>
+            <button class="set-tab" style="--i:3" data-cat="integritet"><svg class="ic"><use href="#i-shield" /></svg>Integritet &amp; säkerhet</button>
+            <button class="set-tab" style="--i:4" data-cat="krypto"><svg class="ic"><use href="#i-chat" /></svg>Krypto</button>
+            <button class="set-tab" style="--i:5" data-cat="tillagg"><svg class="ic"><use href="#i-settings" /></svg>Tillägg</button>
+            <button class="set-tab" style="--i:6" data-cat="losenord"><svg class="ic"><use href="#i-key" /></svg>Autofyll &amp; lösenord</button>
+            <button class="set-tab" style="--i:7" data-cat="konto"><svg class="ic"><use href="#i-user" /></svg>Konto</button>
+            <button class="set-tab" style="--i:8" data-cat="vanner"><svg class="ic"><use href="#i-chat" /></svg>Vänner &amp; chatt</button>
+            <button class="set-tab" style="--i:9" data-cat="wallet"><svg class="ic"><use href="#i-card" /></svg>Prowl Wallet</button>
+            <button class="set-tab" style="--i:10" data-cat="kalender"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="2"/><path d="M16 2.5v4M8 2.5v4M3 10h18"/></svg>Prowl Calendar</button>
+            <button class="set-tab" style="--i:11" data-cat="nedladdningar"><svg class="ic"><use href="#i-download" /></svg>Nedladdningar</button>
+            <button class="set-tab" style="--i:12" data-cat="sprak"><svg class="ic"><use href="#i-globe" /></svg>Språk</button>
+            <button class="set-tab" style="--i:13" data-cat="tillganglighet"><svg class="ic"><use href="#i-eye" /></svg>Tillgänglighet</button>
+            <button class="set-tab" style="--i:14" data-cat="om"><svg class="ic"><use href="#i-shield-check" /></svg>Om</button>
           </nav>
-        </div>
-        <div class="flex-1 overflow-y-auto px-8 py-7">
+      </aside>
+      <main class="set-main">
+        <div class="set-wrap">
+          <header id="set-hero" class="set-hero">
+            <div class="set-hero-avatar" id="set-hero-avatar">?</div>
+            <div class="set-hero-txt">
+              <div class="set-hero-name" id="set-hero-name">Prowl</div>
+              <div class="set-hero-email" id="set-hero-email">Inte inloggad</div>
+            </div>
+            <div class="set-hero-side" id="set-hero-side"></div>
+          </header>
+          <div class="set-content">
           <div class="set-panel" data-cat="utseende">
             <h2 class="set-h">Utseende</h2>
             <div class="set-row">
@@ -935,8 +944,9 @@
             <p class="set-lead mt-4" style="max-width:400px;">En trygg svensk webbläsare med inbyggt bluffskydd, annonsblockerare och privat läge.</p>
             <button id="settings-reset" class="btn btn-risk mt-5" style="height:42px;">Återställ inställningarna</button>
           </div>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
 
     <!-- Bakgrundsväljare -->

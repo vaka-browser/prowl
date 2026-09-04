@@ -407,3 +407,112 @@ textarea.cal-in { resize: vertical; min-height: 60px; }
 .np-loadbody:hover { background: #21374d; color: #fff; }
 
 #net-btn.active { color: var(--color-terra); background: rgba(194,100,63,.14); }
+
+/* ── Inställningar: helsvart helsidesvy i Googles upplägg (2026-09-04) ──
+   Allt under #settings får mörka tokens, så panelernas inline-färger
+   (var(--color-navy-700) osv.) blir ljusa utan att varje rad skrivs om. */
+#settings {
+  --color-navy-950: #ffffff; --color-navy-900: #f2f2f4; --color-navy-800: #e4e4e8; --color-navy-700: #c9ccd2; --color-navy-600: #a2a5ad;
+  --color-paper: #151517; --color-line: #2a2a2e; --color-ink: #f2f2f4; --color-muted: #9a9ca3; --color-chrome: #151517; --color-chrome-2: #1b1b1e;
+  --set-bg: #0b0b0d; --set-card: #151517; --set-card-2: #1c1c20; --set-accent: #e08a62;
+  background: var(--set-bg); color: #f2f2f4; display: grid; grid-template-columns: 268px minmax(0, 1fr); overflow: hidden;
+}
+#settings.hidden { display: none; }
+#settings .set-close { position: absolute; top: 14px; right: 16px; color: #d4d4d8; background: rgb(255 255 255 / .06); border-radius: 999px; }
+#settings .set-close:hover { background: rgb(255 255 255 / .14); color: #fff; }
+#settings .set-rail { padding: 22px 12px 18px; border-right: 1px solid #1f1f23; background: #0b0b0d; overflow-y: auto; }
+#settings .set-brand { display: flex; align-items: center; gap: 10px; padding: 6px 12px 18px; font-size: 20px; font-weight: 800; letter-spacing: -.02em; color: #f2f2f4; }
+#settings .set-brand svg { width: 20px; height: 20px; color: var(--set-accent); fill: none; stroke: currentColor; stroke-width: 1.8; }
+#settings .set-tab { padding: 10px 14px; border-radius: 999px; font-size: 14px; font-weight: 600; color: #c9ccd2; margin-right: 6px; }
+#settings .set-tab svg { width: 18px; height: 18px; color: #a2a5ad; }
+#settings .set-tab:hover { background: rgb(255 255 255 / .06); color: #fff; box-shadow: none; }
+#settings .set-tab.on { background: color-mix(in srgb, var(--set-accent) 16%, transparent); color: #fff; box-shadow: none; }
+#settings .set-tab.on svg { color: var(--set-accent); }
+#settings .set-main { overflow-y: auto; padding: 28px 40px 60px; }
+#settings .set-wrap { max-width: 760px; margin: 0 auto; }
+#settings .set-hero { display: flex; align-items: center; gap: 18px; padding: 8px 4px 22px; border-bottom: 1px solid #1f1f23; margin-bottom: 22px; }
+#settings .set-hero-avatar { width: 72px; height: 72px; border-radius: 999px; overflow: hidden; display: grid; place-items: center; font-size: 28px; font-weight: 800; color: #fff; flex: none;
+  background: linear-gradient(135deg, #2f5f88, #0e2a47); box-shadow: 0 0 0 3px #0b0b0d, 0 0 0 5px color-mix(in srgb, var(--set-accent) 55%, transparent), 0 12px 30px rgb(0 0 0 / .5); position: relative; }
+#settings .set-hero-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+#settings .set-hero-txt { min-width: 0; flex: 1; }
+#settings .set-hero-name { font-size: 22px; font-weight: 800; letter-spacing: -.02em; color: #fff; line-height: 1.15; }
+#settings .set-hero-email { font-size: 13.5px; color: #9a9ca3; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#settings .set-hero-side { display: flex; gap: 8px; align-items: center; flex: none; }
+#settings .set-chip { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 999px; font-size: 12.5px; font-weight: 700; background: color-mix(in srgb, var(--set-accent) 16%, transparent); color: color-mix(in srgb, var(--set-accent) 70%, white); }
+#settings .set-chip.dim { background: rgb(255 255 255 / .07); color: #c9ccd2; }
+#settings .set-h { font-size: 22px; font-weight: 800; letter-spacing: -.02em; color: #fff; margin-bottom: 6px; }
+#settings .set-lead { color: #9a9ca3; }
+#settings .set-panel { background: var(--set-card); border: 1px solid #222226; border-radius: 18px; padding: 18px 22px 22px; }
+#settings .set-row { border-top-color: #232327; }
+#settings .set-ico { background: var(--set-card-2); }
+#settings .set-title { color: #f2f2f4; }
+#settings .set-desc { color: #9a9ca3; }
+#settings .pill:not(.pill-accent) { background: #1d1d20; color: #f2f2f4; border-color: #3b3b40; }
+#settings .pill:not(.pill-accent):hover { background: #27272b; }
+#settings .seg { background: #1d1d20; }
+#settings .seg-btn { color: #c9ccd2; }
+#settings .seg-btn.on { background: #333338; color: #fff; box-shadow: none; }
+#settings .switch .track { background: #3b3b40; }
+#settings .engine-opt { border-color: #2a2a2e; color: #f2f2f4; }
+#settings .engine-opt:hover { background: #1c1c20; }
+#settings .engine-opt.on { background: color-mix(in srgb, var(--set-accent) 10%, transparent); border-color: var(--set-accent); }
+#settings .engine-radio { border-color: #4a4a50; }
+#settings .pw-in, #settings .wl-in, #settings .cal-in, #settings input[type="text"], #settings input[type="password"], #settings input[type="email"], #settings input[type="number"], #settings textarea, #settings select {
+  background: #1d1d20; color: #f2f2f4; border-color: #3b3b40; }
+#settings input::placeholder, #settings textarea::placeholder { color: #6f6f76; }
+#settings .bg-white, #settings .wl-card, #settings .kn-card, #settings .kn-uwrap, #settings .cal-item, #settings .cal-aitem, #settings .cal-nav button, #settings .cal-filterbar button, #settings .cal-item .ci-move button, #settings .ai-status, #settings .kn-del-btn { background: var(--set-card-2); }
+#settings .kn-card, #settings .kn-rows, #settings .kn-uwrap, #settings .wl-card, #settings .cal-month, #settings .cal-col, #settings .cal-item, #settings .cal-aitem { border-color: #2a2a2e; }
+#settings .kn-card { background: #111113; }
+#settings .kn-email, #settings .kn-row .k, #settings .kn-lbl, #settings .kn-danger-p, #settings .wl-lbl, #settings .cal-wd, #settings .cal-item .ci-meta, #settings .cal-aitem .ci-meta, #settings .cal-lbl, #settings .cal-col-head .cnt, #settings .cal-empty { color: #9a9ca3; }
+#settings .kn-usave { background: #26262a; color: #fff; border-left-color: #3b3b40; }
+#settings .kn-danger { background: rgb(214 75 69 / .08); border-color: rgb(214 75 69 / .35); }
+#settings .kn-del-btn { color: #ff7b74; border-color: rgb(214 75 69 / .5); }
+#settings .wl-card-actions { background: #151517; border-top-color: #2a2a2e; }
+#settings .wl-btn { color: #d4d4d8; }
+#settings .wl-btn:hover { background: rgb(255 255 255 / .08); }
+#settings .wl-addbtn { color: #c9ccd2; border-color: #3b3b40; }
+#settings .hist-row { border-bottom-color: #232327; }
+#settings .hist-row:hover, #settings .row-btn:hover { background: #1c1c20; }
+#settings .cal-day:hover, #settings .cal-nav button:hover, #settings .cal-filterbar button:hover { background: #26262a; }
+#settings .cal-day.other { color: #4a4a50; }
+#settings [style*="background:#fff"], #settings [style*="background: #fff"] { background: var(--set-card-2) !important; }
+#settings [style*="color:#fff"] { color: #fff !important; }
+#settings .text-navy-900 { color: #f2f2f4; }
+
+/* Öppningsanimation: profilbilden poppar in med en ring, sedan glider
+   navigationen och innehållet in. Körs en gång per öppning (klassen
+   .opening sätts av openSettings och tas bort efter en sekund). */
+@keyframes set-pop { 0% { opacity: 0; transform: scale(.55); } 60% { opacity: 1; transform: scale(1.08); } 100% { transform: scale(1); } }
+@keyframes set-ring { 0% { box-shadow: 0 0 0 3px #0b0b0d, 0 0 0 5px color-mix(in srgb, var(--set-accent) 90%, transparent), 0 0 0 6px color-mix(in srgb, var(--set-accent) 50%, transparent); } 100% { box-shadow: 0 0 0 3px #0b0b0d, 0 0 0 5px color-mix(in srgb, var(--set-accent) 55%, transparent), 0 0 0 26px rgb(224 138 98 / 0); } }
+@keyframes set-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes set-fade { from { opacity: 0; } to { opacity: 1; } }
+#settings.opening { animation: set-fade .28s ease-out both; }
+#settings.opening .set-hero-avatar { animation: set-pop .6s cubic-bezier(.16,1,.3,1) both, set-ring .9s .25s ease-out both; }
+#settings.opening .set-hero-txt, #settings.opening .set-hero-side { animation: set-rise .55s .18s cubic-bezier(.16,1,.3,1) both; }
+#settings.opening .set-tab { animation: set-rise .5s cubic-bezier(.16,1,.3,1) both; animation-delay: calc(80ms + var(--i, 0) * 28ms); }
+#settings.opening .set-content { animation: set-rise .6s .3s cubic-bezier(.16,1,.3,1) both; }
+/* Kvarvarande inline-färger från ljusa temat (navy-genomskinliga gråtoner) */
+#settings [style*="rgb(28 43 58"], #settings [style*="rgba(28,43,58"], #settings [style*="rgba(28, 43, 58"], #settings [style*="color:#6d7f93"], #settings [style*="color:#8ba3bf"] { color: #9a9ca3 !important; }
+#settings [style*="background:var(--color-paper)"], #settings [style*="background: var(--color-paper)"] { background: var(--set-card-2) !important; }
+#settings .text-muted, #settings .text-ink\/50, #settings .opacity-60 { color: #9a9ca3; }
+/* Fyllda komponenter som byggde på navy-900 (blev nästan vitt av token-bytet ovan) */
+#settings .btn-safe, #settings [style*="background:var(--color-navy-900)"] { background: #2f5f88 !important; color: #fff !important; }
+#settings .btn-safe:hover { background: #3a73a4 !important; }
+#settings .btn-ghost { background: #1d1d20; color: #f2f2f4; border-color: #3b3b40; }
+#settings .btn-ghost:hover { background: #27272b; }
+#settings .btn-risk { background: #1d1d20; color: #ff8a84; border-color: rgb(214 75 69 / .45); }
+#settings .btn-risk:hover { background: rgb(214 75 69 / .12); }
+#settings .kn-avatar, #settings .wl-card-face { background: linear-gradient(135deg, #2f5f88, #0e2a47); }
+#settings .kn-badge { background: color-mix(in srgb, var(--set-accent) 16%, transparent); color: color-mix(in srgb, var(--set-accent) 70%, white); }
+#settings .fr-fam, #settings .fr-chat-av { background: #26262a; border-color: #3b3b40; }
+#settings .fam-in, #settings .fr-dec, #settings .fr-back, #settings .fam-active, #settings .fam-code button { background: #1d1d20; color: #f2f2f4; border-color: #3b3b40; }
+#settings .fam-active.on { background: var(--color-safe); color: #fff; }
+#settings .fam-create, #settings .fam-child, #settings .fr-row, #settings .fr-chat-head, #settings .kn-rows { border-color: #2a2a2e; }
+#settings .fam-create p, #settings .fam-none, #settings .fr-none, #settings .fam-age, #settings .fam-krypto, #settings .fam-del, #settings .fr-go { color: #9a9ca3; }
+#settings .fr-note, #settings .fam-tag, #settings .fr-bub { background: var(--set-card-2); border-color: #2a2a2e; color: #d4d4d8; }
+#settings .fam-tag button { background: rgb(255 255 255 / .1); color: #d4d4d8; }
+#settings .fr-open:hover { background: rgb(47 143 212 / .12); }
+#settings .fam-code { background: rgb(47 143 212 / .12); border-color: rgb(47 143 212 / .4); }
+#settings .fam-code .code { color: #7fc0f0; }
+#settings .fr-edit-in { background: rgb(255 255 255 / .12); }
+#settings .badge-built { background: rgb(47 158 103 / .15); color: #6fd39a; }

@@ -73,6 +73,8 @@ function createTab(url, incognito) {
   tabs.push(tab); switchTab(tab);
   setTimeout(() => { tab.entering = false; }, 280);
   if (url) guardedNavigate(tab, url);
+  // Ny tom flik: markören står redan i adressfältet, så man kan skriva direkt.
+  else setTimeout(() => { try { const a = $('address'); if (a && active === tab) { a.focus(); a.select(); } } catch {} }, 40);
   saveOpenTabs();
   return tab;
 }
@@ -447,7 +449,31 @@ function openSettings() {
   showSettingsCat(account ? 'konto' : 'utseende');
   hideOverlayElements();
   if (active) active.overlay = 'settings';
-  $('settings').classList.remove('hidden');
+  renderSetHero();
+  const sv = $('settings');
+  sv.classList.remove('hidden');
+  // Öppningsanimationen körs om från början varje gång.
+  sv.classList.remove('opening'); void sv.offsetWidth; sv.classList.add('opening');
+  clearTimeout(sv._openT); sv._openT = setTimeout(() => sv.classList.remove('opening'), 1400);
+}
+/* Profilhuvudet överst i inställningarna: bild, namn, mejl och plan. */
+function renderSetHero() {
+  const av = $('set-hero-avatar'), nm = $('set-hero-name'), em = $('set-hero-email'), side = $('set-hero-side');
+  if (!av) return;
+  if (!account) {
+    av.innerHTML = '<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></svg>';
+    nm.textContent = 'Prowl'; em.textContent = 'Inte inloggad';
+    side.innerHTML = '<button class="pill pill-accent" id="set-hero-login" style="height:34px;">Logga in</button>';
+    const b = $('set-hero-login'); if (b) b.addEventListener('click', () => { closeSettings(); openLogin(); });
+    return;
+  }
+  const name = account.name || (account.isChild ? 'Barnkonto' : (account.email ? account.email.split('@')[0] : 'Du'));
+  const pic = (typeof socMe !== 'undefined' && socMe && socMe.avatar) ? socMe.avatar : null;
+  av.innerHTML = pic ? '<img src="' + pic + '" alt="">' : escapeHtml((name[0] || '?').toUpperCase());
+  nm.textContent = name;
+  em.textContent = account.isChild ? 'Barnkonto' : (account.email || '');
+  const badge = $('kn-badge'); const pro = badge ? badge.textContent.trim() : 'Pro';
+  side.innerHTML = (account.pro ? '<span class="set-chip">' + escapeHtml(pro) + '</span>' : '<span class="set-chip dim">Gratis</span>');
 }
 function closeSettings() {
   if (active) active.overlay = null;
@@ -1360,6 +1386,7 @@ async function renderKonto() {
     const un = $('kn-username'); if (un) un.value = socMe.username || '';
     if (socMe.avatar) $('kn-avatar').innerHTML = '<img src="' + socMe.avatar + '" alt="">';
   }
+  if (typeof renderSetHero === 'function') renderSetHero();
 }
 function showConfirmDelete() {
   if (!account || account.isChild || document.getElementById('kn-delmodal')) return;

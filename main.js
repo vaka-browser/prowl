@@ -40,6 +40,10 @@ const wins = new Map();                 // skalets webContents-id -> ctx
  * 2) Inaktiva bakgrundsflikar "kastas" efter en stund: renderer-processen rivs
  *    och endast URL:en sparas; fliken återuppstår vid klick (discardTab/sweep). */
 app.commandLine.appendSwitch('disable-features', 'Translate,MediaRouter,DialMediaRouteProvider,OptimizationHints');
+// Linux: kör mot Wayland när sessionen är Wayland. Utan hinten väljer Electron
+// X11 (XWayland), och där krympte/flyttade ett maximerat fönster när fokus
+// gick till en annan skärm (Cetto 2026-09-04). Startad med hinten stod det kvar.
+if (process.platform === 'linux') app.commandLine.appendSwitch('ozone-platform-hint', 'auto');
 const DISCARD_MS = Number(process.env.TAB_DISCARD_MS) || 10 * 60 * 1000;  // kasta flik efter 10 min ledig
 const DISCARD_SWEEP_MS = 60 * 1000;                                       // svep varje minut
 

@@ -8,7 +8,7 @@
  * per-fönster "ctx"-objekt i `wins`, nycklat på skalets webContents-id. IPC
  * routas till rätt fönster via `event.sender`.
  */
-const { app, BrowserWindow, WebContentsView, ipcMain, session, Menu, clipboard, dialog, shell, safeStorage, components} = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, session, Menu, clipboard, dialog, shell, safeStorage, components, screen } = require('electron');
 app.setName('Prowl');  // egen datamapp, skild från Vaka
 const path = require('path');
 const fs = require('fs');
@@ -1336,6 +1336,37 @@ function createWindow(incognito) {
   win.on('resize', () => sendTo(ctx, 'window-resized'));
   win.on('enter-full-screen', () => applyBounds(ctx));   // räkna om vy-bounds när övergången är klar
   win.on('blur', () => { ctx._blurAt = Date.now(); });
+  // Electron på Wayland ritar fönsterram och skugga själv (CSD). När fönstret
+  // blir inaktivt ritas skuggan tunnare, och Chromium krymper då felaktigt
+  // själva innehållsytan (electron/electron#48588). Ett maximerat fönster
+  // blev 1372x912 på en 1920x1080-skärm i samma ögonblick som fokus gick till
+  // den andra skärmen (Cetto 2026-09-04, VAKA_WIN_DEBUG-logg). Vakten: är
+  // fönstret maximerat men mindre än skärmens arbetsyta, sätt tillbaka storleken.
+  win.on('resize', () => {
+    try {
+      if (!win.isMaximized() || win.isFullScreen()) return;
+      const b = win.getBounds();
+      const wa = screen.getDisplayMatching(b).workArea;
+      if (b.width >= wa.width - 4 && b.height >= wa.height - 4) return;
+      if (ctx._regrow) return;
+      ctx._regrow = setTimeout(() => {
+        ctx._regrow = null;
+        try {
+          if (win.isDestroyed() || !win.isMaximized()) return;
+          const nb = win.getBounds();
+          if (nb.width >= wa.width - 4 && nb.height >= wa.height - 4) return;
+          win.setSize(wa.width, wa.height);
+          setTimeout(() => {
+            try {
+              if (win.isDestroyed() || !win.isMaximized()) return;
+              const b2 = win.getBounds();
+              if (b2.width < wa.width - 4 || b2.height < wa.height - 4) { win.unmaximize(); win.maximize(); }
+            } catch {}
+          }, 150);
+        } catch {}
+      }, 40);
+    } catch {}
+  });
   win.on('leave-full-screen', () => {
     applyBounds(ctx);
     // Begärde ingen det här (F11/meny/sidan sätter fullWanted=false först) och

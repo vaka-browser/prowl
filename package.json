@@ -1,6 +1,6 @@
 {
   "name": "prowl",
-  "version": "0.3.39",
+  "version": "0.3.40",
   "description": "Prowl \u2013 hackerutg\u00e5van av den svenska webbl\u00e4saren",
   "main": "main.js",
   "scripts": {

@@ -516,3 +516,8 @@ textarea.cal-in { resize: vertical; min-height: 60px; }
 #settings .fam-code .code { color: #7fc0f0; }
 #settings .fr-edit-in { background: rgb(255 255 255 / .12); }
 #settings .badge-built { background: rgb(47 158 103 / .15); color: #6fd39a; }
+
+/* Sökförslag i adressfältets lista: förstoringsglas, frasen med det skrivna i fetstil, motorn som underrad */
+.sug.ssearch .surl { font-weight: 500; }
+.sug.ssearch .surl b { font-weight: 700; }
+.sug.ssearch .sfav svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }

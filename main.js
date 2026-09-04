@@ -8,7 +8,7 @@
  * per-fönster "ctx"-objekt i `wins`, nycklat på skalets webContents-id. IPC
  * routas till rätt fönster via `event.sender`.
  */
-const { app, BrowserWindow, WebContentsView, ipcMain, session, Menu, clipboard, dialog, shell, safeStorage, components, screen } = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, session, Menu, clipboard, dialog, shell, safeStorage, components, screen, net } = require('electron');
 app.setName('Prowl');  // egen datamapp, skild från Vaka
 const path = require('path');
 const fs = require('fs');
@@ -1030,6 +1030,31 @@ ipcMain.on('view:destroy', (e, id) => {
 });
 ipcMain.on('app:fullscreen', (e) => { const ctx = ctxFor(e); if (ctx) toggleFull(ctx); });
 ipcMain.on('app:quit', () => app.quit());
+/* ── Sökförslag till adressfältet ──
+ * Hämtas här i huvudprocessen (ingen CORS) från den sökmotor användaren valt.
+ * Startpage saknar förslags-API → DuckDuckGo, som inte loggar. Svaret är alltid
+ * en lista strängar; fel eller timeout ger en tom lista, aldrig ett undantag
+ * till skalet. Inkognito frågar aldrig hit (skalet avgör). */
+const SUGGEST_URLS = {
+  google: (q) => 'https://suggestqueries.google.com/complete/search?client=firefox&hl=sv&q=' + encodeURIComponent(q),
+  duckduckgo: (q) => 'https://duckduckgo.com/ac/?type=list&q=' + encodeURIComponent(q),
+  brave: (q) => 'https://search.brave.com/api/suggest?q=' + encodeURIComponent(q),
+  startpage: (q) => 'https://duckduckgo.com/ac/?type=list&q=' + encodeURIComponent(q),
+};
+ipcMain.handle('omni:suggest', async (_e, arg) => {
+  try {
+    const q = String((arg && arg.q) || '').trim().slice(0, 200);
+    if (!q) return [];
+    const mk = SUGGEST_URLS[(arg && arg.engine) || 'google'] || SUGGEST_URLS.google;
+    const ac = new AbortController(); const t = setTimeout(() => ac.abort(), 1500);
+    const res = await net.fetch(mk(q), { signal: ac.signal, headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' } });
+    clearTimeout(t);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const list = Array.isArray(data) && Array.isArray(data[1]) ? data[1] : [];
+    return list.map((s) => (typeof s === 'string' ? s : (s && s.phrase) || '')).filter(Boolean).slice(0, 6);
+  } catch { return []; }
+});
 ipcMain.on('i18n:load', (e, lang) => {
   try {
     const code = String(lang || '').replace(/[^a-zA-Z-]/g, '');

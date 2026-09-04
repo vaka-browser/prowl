@@ -963,9 +963,16 @@ function positionSug() {
 function renderSug() {
   suggestEl.innerHTML = '';
   sug.items.forEach((it, i) => {
-    const el = document.createElement('div'); el.className = 'sug' + (i === sug.sel ? ' sel' : '');
-    const fav = it.favicon ? `<img src="${it.favicon}" onerror="this.style.display='none'">` : '<svg class="ic ic-sm"><use href="#i-globe"/></svg>';
-    el.innerHTML = `<span class="sfav">${fav}</span><span class="smeta"><span class="surl">${escapeHtml(it.host)}</span><span class="stitle">${escapeHtml(it.title)}</span></span>`;
+    const el = document.createElement('div'); el.className = 'sug' + (i === sug.sel ? ' sel' : '') + (it.search ? ' ssearch' : '');
+    if (it.search) {
+      // Sökförslag: förstoringsglas + frasen. Det man skrivit visas fet.
+      const q = it.q, typed = (sug.typed || '').toLowerCase();
+      const html = q.toLowerCase().startsWith(typed) && typed ? '<b>' + escapeHtml(q.slice(0, typed.length)) + '</b>' + escapeHtml(q.slice(typed.length)) : escapeHtml(q);
+      el.innerHTML = `<span class="sfav"><svg class="ic ic-sm"><use href="#i-search"/></svg></span><span class="smeta"><span class="surl">${html}</span><span class="stitle">${escapeHtml(sug.engineLabel || '')}</span></span>`;
+    } else {
+      const fav = it.favicon ? `<img src="${it.favicon}" onerror="this.style.display='none'">` : '<svg class="ic ic-sm"><use href="#i-globe"/></svg>';
+      el.innerHTML = `<span class="sfav">${fav}</span><span class="smeta"><span class="surl">${escapeHtml(it.host)}</span><span class="stitle">${escapeHtml(it.title)}</span></span>`;
+    }
     el.addEventListener('mousedown', (ev) => { ev.preventDefault(); pickSug(it); });
     suggestEl.appendChild(el);
   });
@@ -982,13 +989,32 @@ function topSitesForSug() {
   }
   return out;
 }
+let sugSeq = 0, sugTimer = null;
 function updateSug(q) {
   const inp = sug.input; if (!inp) return;
   const query = (q || '').trim();
-  sug.items = query ? historyMatches(query) : topSitesForSug();  // tomt fält → dina mest besökta sajter
+  sug.typed = query;
+  const hist = query ? historyMatches(query) : topSitesForSug();  // tomt fält → dina mest besökta sajter
+  sug.items = hist;
   if (sug.items.length && document.activeElement === inp) { renderSug(); openSug(); } else closeSug();
+  // Sökförslag från sökmotorn, som i Chrome: "v" → vercel.com ur historiken
+  // OCH "varför är …" från motorn. Inte i inkognito, inte för adresser.
+  clearTimeout(sugTimer);
+  if (!query || (active && active.incognito) || /^[a-z]+:\/\//i.test(query) || /^[^\s]+\.[a-z]{2,}(\/|$)/i.test(query)) return;
+  const seq = ++sugSeq;
+  sugTimer = setTimeout(async () => {
+    let list = [];
+    try { list = await window.view.suggest(query, searchEngine); } catch { list = []; }
+    if (seq !== sugSeq || document.activeElement !== inp || (inp.value || '').trim() !== query) return;   // gammalt svar → släng
+    const keep = hist.slice(0, 4);
+    const seen = new Set(keep.map((h) => h.host));
+    const extra = list.filter((t) => t && !seen.has(t.toLowerCase())).slice(0, 8 - keep.length).map((t) => ({ search: true, q: t }));
+    sug.engineLabel = (ENGINES[searchEngine] || ENGINES.google).label;
+    sug.items = keep.concat(extra);
+    if (sug.items.length) { renderSug(); openSug(); }
+  }, 140);
 }
-function pickSug(it) { closeSug(false); if (active) guardedNavigate(active, it.url); }
+function pickSug(it) { closeSug(false); if (!active) return; if (it.search) { sug.input && (sug.input.value = it.q); guardedNavigate(active, it.q); } else guardedNavigate(active, it.url); }
 function attachAutocomplete(inp, anchor) {
   inp.addEventListener('focus', () => {
     sug.input = inp; sug.anchor = anchor; sug.sel = -1;

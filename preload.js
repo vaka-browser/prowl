@@ -86,6 +86,7 @@ contextBridge.exposeInMainWorld('view', {
   load: (id, url) => ipcRenderer.send('view:load', id, url),
   show: (id) => ipcRenderer.send('view:show', id),
   hide: () => ipcRenderer.send('view:hide'),
+  suggest: (q, engine) => ipcRenderer.invoke('omni:suggest', { q, engine }),
   bounds: (r) => ipcRenderer.send('view:bounds', r),
   insetTop: (px) => ipcRenderer.send('view:inset-top', px),
   insetLeft: (px) => ipcRenderer.send('view:inset-left', px),

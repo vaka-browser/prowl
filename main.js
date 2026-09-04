@@ -431,39 +431,39 @@ function buildContextMenu(ctx, wc, params) {
   const nav = wc.navigationHistory;
   const url = wc.getURL();
   const t = [];
-  t.push({ label: 'Tillbaka', enabled: nav.canGoBack(), click: () => { try { nav.goBack(); } catch { wc.goBack(); } } });
-  t.push({ label: 'Framåt', enabled: nav.canGoForward(), click: () => { try { nav.goForward(); } catch { wc.goForward(); } } });
-  t.push({ label: 'Läs in igen', click: () => wc.reload() });
+  t.push({ label: T('Tillbaka'), enabled: nav.canGoBack(), click: () => { try { nav.goBack(); } catch { wc.goBack(); } } });
+  t.push({ label: T('Framåt'), enabled: nav.canGoForward(), click: () => { try { nav.goForward(); } catch { wc.goForward(); } } });
+  t.push({ label: T('Läs in igen'), click: () => wc.reload() });
   t.push({ type: 'separator' });
   if (params.linkURL) {
-    t.push({ label: 'Öppna länk i ny flik', click: () => sendTo(ctx, 'open-new-tab', params.linkURL) });
-    t.push({ label: 'Kopiera länkadress', click: () => clipboard.writeText(params.linkURL) });
+    t.push({ label: T('Öppna länk i ny flik'), click: () => sendTo(ctx, 'open-new-tab', params.linkURL) });
+    t.push({ label: T('Kopiera länkadress'), click: () => clipboard.writeText(params.linkURL) });
     t.push({ type: 'separator' });
   }
   if (params.mediaType === 'image' && params.srcURL) {
-    t.push({ label: 'Spara bild som…', click: () => wc.downloadURL(params.srcURL) });
-    t.push({ label: 'Kopiera bildadress', click: () => clipboard.writeText(params.srcURL) });
+    t.push({ label: T('Spara bild som…'), click: () => wc.downloadURL(params.srcURL) });
+    t.push({ label: T('Kopiera bildadress'), click: () => clipboard.writeText(params.srcURL) });
     t.push({ type: 'separator' });
   }
   if (params.isEditable) {
-    t.push({ label: 'Klipp ut', role: 'cut', enabled: params.editFlags.canCut });
-    t.push({ label: 'Kopiera', role: 'copy', enabled: params.editFlags.canCopy });
-    t.push({ label: 'Klistra in', role: 'paste', enabled: params.editFlags.canPaste });
+    t.push({ label: T('Klipp ut'), role: 'cut', enabled: params.editFlags.canCut });
+    t.push({ label: T('Kopiera'), role: 'copy', enabled: params.editFlags.canCopy });
+    t.push({ label: T('Klistra in'), role: 'paste', enabled: params.editFlags.canPaste });
     t.push({ type: 'separator' });
   } else if (params.selectionText && params.selectionText.trim()) {
     const sel = params.selectionText.trim();
     const short = sel.length > 24 ? sel.slice(0, 24) + '…' : sel;
-    t.push({ label: 'Kopiera', role: 'copy' });
-    t.push({ label: `Sök på Google efter "${short}"`, click: () => sendTo(ctx, 'open-new-tab', 'https://www.google.com/search?q=' + encodeURIComponent(sel)) });
+    t.push({ label: T('Kopiera'), role: 'copy' });
+    t.push({ label: T('Sök på Google efter') + ` "${short}"`, click: () => sendTo(ctx, 'open-new-tab', 'https://www.google.com/search?q=' + encodeURIComponent(sel)) });
     t.push({ type: 'separator' });
   }
-  t.push({ label: 'Spara som…', click: () => savePage(ctx, wc) });
-  t.push({ label: 'Skriv ut…', click: () => printPage(ctx, wc) });
-  t.push({ label: 'Skapa QR-kod för sidan', click: () => showQR(ctx, url) });
-  t.push({ label: 'Översätt till svenska', click: () => sendTo(ctx, 'open-new-tab', 'https://translate.google.com/translate?sl=auto&tl=sv&u=' + encodeURIComponent(url)) });
+  t.push({ label: T('Spara som…'), click: () => savePage(ctx, wc) });
+  t.push({ label: T('Skriv ut…'), click: () => printPage(ctx, wc) });
+  t.push({ label: T('Skapa QR-kod för sidan'), click: () => showQR(ctx, url) });
+  t.push({ label: T('Översätt till svenska'), click: () => sendTo(ctx, 'open-new-tab', 'https://translate.google.com/translate?sl=auto&tl=sv&u=' + encodeURIComponent(url)) });
   t.push({ type: 'separator' });
-  t.push({ label: 'Visa sidans källa', click: () => sendTo(ctx, 'open-tab-raw', 'view-source:' + url) });
-  t.push({ label: 'Inspektera', click: () => { try { wc.inspectElement(params.x, params.y); } catch {} } });
+  t.push({ label: T('Visa sidans källa'), click: () => sendTo(ctx, 'open-tab-raw', 'view-source:' + url) });
+  t.push({ label: T('Inspektera'), click: () => { try { wc.inspectElement(params.x, params.y); } catch {} } });
   Menu.buildFromTemplate(t).popup({ window: ctx.win });
 }
 
@@ -472,26 +472,26 @@ function buildContextMenu(ctx, wc, params) {
 function buildShellMenu(ctx, wc, params) {
   const t = [];
   if (params.isEditable) {
-    t.push({ label: 'Klipp ut', role: 'cut', enabled: params.editFlags.canCut });
-    t.push({ label: 'Kopiera', role: 'copy', enabled: params.editFlags.canCopy });
-    t.push({ label: 'Klistra in', role: 'paste', enabled: params.editFlags.canPaste });
+    t.push({ label: T('Klipp ut'), role: 'cut', enabled: params.editFlags.canCut });
+    t.push({ label: T('Kopiera'), role: 'copy', enabled: params.editFlags.canCopy });
+    t.push({ label: T('Klistra in'), role: 'paste', enabled: params.editFlags.canPaste });
     t.push({ type: 'separator' });
-    t.push({ label: 'Markera allt', role: 'selectAll' });
+    t.push({ label: T('Markera allt'), role: 'selectAll' });
   } else if (params.selectionText && params.selectionText.trim()) {
-    t.push({ label: 'Kopiera', role: 'copy' });
+    t.push({ label: T('Kopiera'), role: 'copy' });
   } else {
-    t.push({ label: 'Ny flik', click: () => sendTo(ctx, 'open-new-tab') });
-    t.push({ label: 'Nytt fönster', click: () => createWindow(false) });
-    t.push({ label: 'Ny inkognitoflik', click: () => sendTo(ctx, 'new-incognito') });
+    t.push({ label: T('Ny flik'), click: () => sendTo(ctx, 'open-new-tab') });
+    t.push({ label: T('Nytt fönster'), click: () => createWindow(false) });
+    t.push({ label: T('Ny inkognitoflik'), click: () => sendTo(ctx, 'new-incognito') });
     const clip = (clipboard.readText() || '').trim();
     if (clip) {
       const short = clip.length > 32 ? clip.slice(0, 32) + '…' : clip;
       t.push({ type: 'separator' });
-      t.push({ label: `Klistra in och gå till "${short}"`, click: () => sendTo(ctx, 'open-new-tab', clip) });
+      t.push({ label: T('Klistra in och gå till') + ` "${short}"`, click: () => sendTo(ctx, 'open-new-tab', clip) });
     }
     t.push({ type: 'separator' });
-    t.push({ label: 'Historik', click: () => sendTo(ctx, 'open-history') });
-    t.push({ label: 'Inställningar', click: () => sendTo(ctx, 'open-settings') });
+    t.push({ label: T('Historik'), click: () => sendTo(ctx, 'open-history') });
+    t.push({ label: T('Inställningar'), click: () => sendTo(ctx, 'open-settings') });
   }
   if (t.length) Menu.buildFromTemplate(t).popup({ window: ctx.win });
 }
@@ -767,6 +767,8 @@ ipcMain.on('pw:capture', (e, c) => {
  * kan sedan översätta enstaka strängar här i huvudprocessen. Svenska = nyckeln. */
 let uiLang = 'sv';
 const _dicts = new Map();
+/* Översätter en sträng i huvudprocessen till skalets språk. Svenska = nyckeln. */
+function T(sv) { const d = localeDict(uiLang); const v = d && d[sv]; return v == null ? sv : v; }
 function localeDict(code) {
   if (!code || code === 'sv') return {};
   if (_dicts.has(code)) return _dicts.get(code);
@@ -1086,33 +1088,33 @@ ipcMain.on('close-confirm-done', (e, res) => {
 ipcMain.on('open-app-menu', (e) => {
   const ctx = ctxFor(e); if (!ctx) return;
   const t = [
-    { label: 'Ny flik', accelerator: 'CmdOrCtrl+T', click: () => sendTo(ctx, 'open-new-tab') },
-    { label: 'Nytt fönster', accelerator: 'CmdOrCtrl+N', click: () => createWindow(false) },
-    { label: 'Nytt inkognitofönster', accelerator: 'CmdOrCtrl+Shift+N', click: () => createWindow(true) },
-    { label: 'Ny inkognitoflik', click: () => sendTo(ctx, 'new-incognito') },
+    { label: T('Ny flik'), accelerator: 'CmdOrCtrl+T', click: () => sendTo(ctx, 'open-new-tab') },
+    { label: T('Nytt fönster'), accelerator: 'CmdOrCtrl+N', click: () => createWindow(false) },
+    { label: T('Nytt inkognitofönster'), accelerator: 'CmdOrCtrl+Shift+N', click: () => createWindow(true) },
+    { label: T('Ny inkognitoflik'), click: () => sendTo(ctx, 'new-incognito') },
     { type: 'separator' },
-    { label: 'Lösenord och autofyll', click: () => sendTo(ctx, 'open-passwords') },
-    { label: 'Historik', click: () => sendTo(ctx, 'open-history') },
-    { label: 'Bokmärken och listor', click: () => sendTo(ctx, 'open-bookmarks') },
-    { label: 'Nedladdade filer', click: () => sendTo(ctx, 'open-downloads') },
+    { label: T('Lösenord och autofyll'), click: () => sendTo(ctx, 'open-passwords') },
+    { label: T('Historik'), click: () => sendTo(ctx, 'open-history') },
+    { label: T('Bokmärken och listor'), click: () => sendTo(ctx, 'open-bookmarks') },
+    { label: T('Nedladdade filer'), click: () => sendTo(ctx, 'open-downloads') },
     { type: 'separator' },
-    { label: 'Zooma in', click: () => sendTo(ctx, 'menu-zoom', 1) },
-    { label: 'Zooma ut', click: () => sendTo(ctx, 'menu-zoom', -1) },
-    { label: 'Återställ zoom', click: () => sendTo(ctx, 'menu-zoom', 0) },
-    { label: 'Helskärm', accelerator: 'F11', click: () => toggleFull(ctx) },
-    { label: 'Skriv ut…', accelerator: 'CmdOrCtrl+P', click: () => sendTo(ctx, 'menu-print') },
-    { label: 'Fler verktyg', submenu: [
-      { label: 'Utvecklarverktyg', accelerator: 'F12', click: () => { const v = ctx.views.get(ctx.visibleTab); if (v) try { v.webContents.openDevTools(); } catch {} } },
-      { label: 'Rensa surfdata', click: () => {
+    { label: T('Zooma in'), click: () => sendTo(ctx, 'menu-zoom', 1) },
+    { label: T('Zooma ut'), click: () => sendTo(ctx, 'menu-zoom', -1) },
+    { label: T('Återställ zoom'), click: () => sendTo(ctx, 'menu-zoom', 0) },
+    { label: T('Helskärm'), accelerator: 'F11', click: () => toggleFull(ctx) },
+    { label: T('Skriv ut…'), accelerator: 'CmdOrCtrl+P', click: () => sendTo(ctx, 'menu-print') },
+    { label: T('Fler verktyg'), submenu: [
+      { label: T('Utvecklarverktyg'), accelerator: 'F12', click: () => { const v = ctx.views.get(ctx.visibleTab); if (v) try { v.webContents.openDevTools(); } catch {} } },
+      { label: T('Rensa surfdata'), click: () => {
         try { session.defaultSession.clearStorageData(); } catch {}
         try { session.fromPartition('skoll-incognito').clearStorageData(); } catch {}
         sendTo(ctx, 'clear-data');
       } },
     ] },
     { type: 'separator' },
-    { label: 'Hjälp & om', click: () => sendTo(ctx, 'open-settings', 'om') },
-    { label: 'Inställningar', click: () => sendTo(ctx, 'open-settings') },
-    { label: 'Avsluta', accelerator: 'CmdOrCtrl+Q', click: () => app.quit() },
+    { label: T('Hjälp & om'), click: () => sendTo(ctx, 'open-settings', 'om') },
+    { label: T('Inställningar'), click: () => sendTo(ctx, 'open-settings') },
+    { label: T('Avsluta'), accelerator: 'CmdOrCtrl+Q', click: () => app.quit() },
   ];
   Menu.buildFromTemplate(t).popup({ window: ctx.win });
 });
@@ -1474,7 +1476,7 @@ function startAutoUpdate() {
     autoUpdater.on('update-not-available', (i) => log('up-to-date ' + (i && i.version)));
     autoUpdater.on('update-downloaded', (info) => {
       log('downloaded ' + (info && info.version));
-      broadcast('toast', 'Prowl ' + ((info && info.version) || '') + ' är hämtad — uppdateras nästa gång du startar om.');
+      broadcast('toast', 'Prowl ' + ((info && info.version) || '') + ' ' + T('är hämtad — uppdateras nästa gång du startar om.'));
       broadcast('update-ready', (info && info.version) || '');
     });
     autoUpdater.on('error', (e) => log('error ' + (e && e.message)));

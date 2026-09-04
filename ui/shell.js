@@ -26,11 +26,13 @@ const ENGINES = {
   brave: { label: 'Brave Search', url: 'https://search.brave.com/search?q=' },
   startpage: { label: 'Startpage', url: 'https://www.startpage.com/sp/search?query=' },
 };
+/* Inkognito söker alltid via Vaka Sök (vår egen, loggar inget). Finns inte i vanliga listan. */
+const INCOG_ENGINE = { label: 'Vaka Sök', url: 'https://vaka-sok.vercel.app/search?q=' };
 let searchEngine = 'google';
 try { const e = localStorage.getItem('skoll-engine'); if (e && ENGINES[e]) searchEngine = e; } catch {}
 function searchUrl(q) {
-  // Vanligt: vald sökmotor. Inkognito: alltid DuckDuckGo (mer privat).
-  if (active && active.incognito) return ENGINES.duckduckgo.url + encodeURIComponent(q);
+  // Vanligt: vald sökmotor. Inkognito: alltid Vaka Sök (ingen logg).
+  if (active && active.incognito) return INCOG_ENGINE.url + encodeURIComponent(q);
   return (ENGINES[searchEngine] || ENGINES.google).url + encodeURIComponent(q);
 }
 function normalizeUrl(raw) {
@@ -116,7 +118,7 @@ function showActiveTab() {
 function switchTab(tab) {
   active = tab;
   document.body.classList.toggle('incog', !!tab.incognito);
-  $('search-engine').textContent = tab.incognito ? 'DuckDuckGo' : (ENGINES[searchEngine] || ENGINES.google).label;
+  $('search-engine').textContent = tab.incognito ? INCOG_ENGINE.label : (ENGINES[searchEngine] || ENGINES.google).label;
   addressInput.value = tab.url ? pretty(tab.url) : '';
   setShield(tab.url ? (protectionOn ? (tab.verdict ? tab.verdict.status : 'ok') : 'off') : 'home');
   hideOverlayElements();
@@ -1000,16 +1002,17 @@ function updateSug(q) {
   // Sökförslag från sökmotorn, som i Chrome: "v" → vercel.com ur historiken
   // OCH "varför är …" från motorn. Inte i inkognito, inte för adresser.
   clearTimeout(sugTimer);
-  if (!query || (active && active.incognito) || /^[a-z]+:\/\//i.test(query) || /^[^\s]+\.[a-z]{2,}(\/|$)/i.test(query)) return;
+  const incog = !!(active && active.incognito);
+  if (!query || /^[a-z]+:\/\//i.test(query) || /^[^\s]+\.[a-z]{2,}(\/|$)/i.test(query)) return;
   const seq = ++sugSeq;
   sugTimer = setTimeout(async () => {
     let list = [];
-    try { list = await window.view.suggest(query, searchEngine); } catch { list = []; }
+    try { list = await window.view.suggest(query, incog ? 'vaka' : searchEngine); } catch { list = []; }   // inkognito: förslag från Vaka Sök
     if (seq !== sugSeq || document.activeElement !== inp || (inp.value || '').trim() !== query) return;   // gammalt svar → släng
     const keep = hist.slice(0, 4);
     const seen = new Set(keep.map((h) => h.host));
     const extra = list.filter((t) => t && !seen.has(t.toLowerCase())).slice(0, 8 - keep.length).map((t) => ({ search: true, q: t }));
-    sug.engineLabel = (ENGINES[searchEngine] || ENGINES.google).label;
+    sug.engineLabel = incog ? INCOG_ENGINE.label : (ENGINES[searchEngine] || ENGINES.google).label;
     sug.items = keep.concat(extra);
     if (sug.items.length) { renderSug(); openSug(); }
   }, 140);

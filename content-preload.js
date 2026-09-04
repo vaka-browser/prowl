@@ -541,3 +541,16 @@ function run() {
   } catch {}
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
+
+/* Helskärmsminne för main.js: när skrivbordet (GNOME Wayland) släpper
+ * helskärmen vid fokusförlust ber huvudprocessen sidan gå tillbaka i sin
+ * helskärm. Elementet minns vi här, för efter ett ofrivilligt utträde är
+ * document.fullscreenElement redan null. Ligger i den isolerade världen,
+ * nås via executeJavaScriptInIsolatedWorld(999). */
+try {
+  let lastFs = null;
+  document.addEventListener('fullscreenchange', () => { if (document.fullscreenElement) lastFs = document.fullscreenElement; });
+  window.__vakaRefull = () => {
+    try { if (lastFs && lastFs.isConnected && !document.fullscreenElement) lastFs.requestFullscreen().catch(() => {}); } catch {}
+  };
+} catch {}

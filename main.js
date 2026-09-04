@@ -59,6 +59,13 @@ function makeCtx(win, incognito) {
   };
 }
 function ctxFor(event) { return wins.get(event.sender.id); }
+
+/* Helskärm lämnas BARA på begäran: F11, menyn eller sidans egen knapp.
+ * GNOME på Wayland släpper helskärmsflaggan när fönstret tappar fokus till en
+ * annan skärm, och Chromium lyder. fullWanted är vad användaren vill; allt som
+ * avviker från det utan att vara begärt sätts tillbaka (se leave-full-screen). */
+function setFull(ctx, want) { ctx.fullWanted = !!want; try { ctx.win.setFullScreen(!!want); } catch {} }
+function toggleFull(ctx) { setFull(ctx, !ctx.win.isFullScreen()); }
 function sendTo(ctx, ...a) { if (ctx && ctx.win && !ctx.win.isDestroyed()) ctx.win.webContents.send(...a); }
 function broadcast(...a) { wins.forEach((ctx) => sendTo(ctx, ...a)); if (a[0] === 'download-update') pushDownloadPopups(); }
 /* Nedladdnings-popup = WebContentsView OVANPÅ fliken (ej separat fönster: Wayland kan ej
@@ -540,8 +547,28 @@ function ensureView(ctx, tabId) {
   wc.on('dom-ready', () => { try { if (ctx.defaultZoom !== 1) wc.setZoomFactor(ctx.defaultZoom); } catch {} });
   wc.on('context-menu', (_e, params) => { try { buildContextMenu(ctx, wc, params); } catch {} });
   // Video/element går i helskärm (sidans egen fullscreen-knapp) → täck HELA skärmen
-  wc.on('enter-html-full-screen', () => { ctx._wasFull = ctx.win.isFullScreen(); ctx.htmlFull = true; try { ctx.win.setFullScreen(true); } catch {} applyBounds(ctx); });
-  wc.on('leave-html-full-screen', () => { ctx.htmlFull = false; try { if (!ctx._wasFull) ctx.win.setFullScreen(false); } catch {} applyBounds(ctx); });
+  wc.on('enter-html-full-screen', () => { ctx._wasFull = ctx.win.isFullScreen(); ctx.htmlFull = true; setFull(ctx, true); applyBounds(ctx); });
+  wc.on('leave-html-full-screen', () => {
+    // Ofrivilligt = fönstret har just tappat fokus (klick på en annan skärm).
+    // Då bad ingen om att lämna: sätt tillbaka fönstrets helskärm och be sidan
+    // gå in i sin igen. Esc eller sidans egen knapp sker med fokus kvar.
+    const involuntary = ctx.htmlFull && (!ctx.win.isFocused() || Date.now() - (ctx._blurAt || 0) < 1500);
+    if (involuntary) {
+      setFull(ctx, true);
+      setTimeout(() => {
+        try { wc.executeJavaScriptInIsolatedWorld(999, [{ code: 'window.__vakaRefull && window.__vakaRefull()' }], true); } catch {}
+        // Gick sidan inte tillbaka i helskärm (ingen gest godkänd) får fönstret
+        // inte stå kvar utan flikrad. Då gäller vanlig exit.
+        setTimeout(async () => {
+          let inFs = false;
+          try { inFs = await wc.executeJavaScriptInIsolatedWorld(999, [{ code: '!!document.fullscreenElement' }]); } catch {}
+          if (!inFs) { ctx.htmlFull = false; setFull(ctx, ctx._wasFull); applyBounds(ctx); }
+        }, 600);
+      }, 120);
+      return;
+    }
+    ctx.htmlFull = false; setFull(ctx, ctx._wasFull); applyBounds(ctx);
+  });
   wc.on('did-finish-load', async () => {
     try {
       const url = wc.getURL();
@@ -995,7 +1022,7 @@ ipcMain.on('view:destroy', (e, id) => {
   ctx.incognitoTabs.delete(id); ctx.discarded.delete(id); ctx.lastActive.delete(id);
   if (ctx.visibleTab === id) ctx.visibleTab = null;
 });
-ipcMain.on('app:fullscreen', (e) => { const ctx = ctxFor(e); if (ctx) ctx.win.setFullScreen(!ctx.win.isFullScreen()); });
+ipcMain.on('app:fullscreen', (e) => { const ctx = ctxFor(e); if (ctx) toggleFull(ctx); });
 ipcMain.on('app:quit', () => app.quit());
 ipcMain.on('i18n:load', (e, lang) => {
   try {
@@ -1068,7 +1095,7 @@ ipcMain.on('open-app-menu', (e) => {
     { label: 'Zooma in', click: () => sendTo(ctx, 'menu-zoom', 1) },
     { label: 'Zooma ut', click: () => sendTo(ctx, 'menu-zoom', -1) },
     { label: 'Återställ zoom', click: () => sendTo(ctx, 'menu-zoom', 0) },
-    { label: 'Helskärm', accelerator: 'F11', click: () => ctx.win.setFullScreen(!ctx.win.isFullScreen()) },
+    { label: 'Helskärm', accelerator: 'F11', click: () => toggleFull(ctx) },
     { label: 'Skriv ut…', accelerator: 'CmdOrCtrl+P', click: () => sendTo(ctx, 'menu-print') },
     { label: 'Fler verktyg', submenu: [
       { label: 'Utvecklarverktyg', accelerator: 'F12', click: () => { const v = ctx.views.get(ctx.visibleTab); if (v) try { v.webContents.openDevTools(); } catch {} } },
@@ -1278,7 +1305,7 @@ function handleShortcut(wc, input) {
   if (mod && (k === '-' || k === '_')) { sendTo(ctx, 'menu-zoom', -1); return true; }
   if (mod && k === '0') { sendTo(ctx, 'menu-zoom', 0); return true; }
   if (mod && !shift && k === 'q') { app.quit(); return true; }
-  if (k === 'f11') { ctx.win.setFullScreen(!ctx.win.isFullScreen()); return true; }
+  if (k === 'f11') { toggleFull(ctx); return true; }
   if (k === 'f12' || (mod && shift && k === 'i')) { const v = activeView(ctx); if (v) try { v.webContents.openDevTools(); } catch {} return true; }
   if (k === 'f5') { const v = activeView(ctx); if (v) v.webContents.reload(); return true; }
   return false;
@@ -1304,7 +1331,16 @@ function createWindow(incognito) {
   win.loadFile(path.join(__dirname, 'ui', 'shell.html'), incognito ? { query: { incognito: '1' } } : {});
   win.on('resize', () => sendTo(ctx, 'window-resized'));
   win.on('enter-full-screen', () => applyBounds(ctx));   // räkna om vy-bounds när övergången är klar
-  win.on('leave-full-screen', () => applyBounds(ctx));
+  win.on('blur', () => { ctx._blurAt = Date.now(); });
+  win.on('leave-full-screen', () => {
+    applyBounds(ctx);
+    // Begärde ingen det här (F11/meny/sidan sätter fullWanted=false först) och
+    // fönstret är utan fokus, så är det skrivbordet som tog helskärmen. Ta
+    // tillbaka den. Fördröjningen låter kompositorns konfiguration landa.
+    if (ctx.fullWanted && (!win.isFocused() || Date.now() - (ctx._blurAt || 0) < 1500)) {
+      setTimeout(() => { try { if (ctx.fullWanted && !win.isDestroyed() && !win.isFullScreen()) win.setFullScreen(true); } catch {} }, 80);
+    }
+  });
   // Bekräfta innan man stänger ett fönster med flera flikar (Brave-likt). Skalet
   // avgör om dialogen behövs (det vet flik-antalet) och kallar win:do-close när OK.
   win.on('close', (e) => {

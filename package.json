@@ -1,6 +1,6 @@
 {
   "name": "prowl",
-  "version": "0.3.48",
+  "version": "0.3.49",
   "description": "Prowl – hackerutgåvan av den svenska webbläsaren",
   "main": "main.js",
   "scripts": {
@@ -12,7 +12,6 @@
   "author": "Cetto",
   "license": "UNLICENSED",
   "dependencies": {
-    "@ghostery/adblocker-electron": "^2.18.2",
     "cross-fetch": "^4.1.0",
     "electron-updater": "^6.8.9",
     "qrcode": "^1.5.4"
@@ -76,6 +75,9 @@
       "uninstallerIcon": "build/icon.ico"
     },
     "afterPack": "build/afterPack.js",
-    "electronDist": "/home/mint/.castlabs-electron-dist"
+    "electronDist": "/home/mint/.castlabs-electron-dist",
+    "asarUnpack": [
+      "native/**"
+    ]
   }
 }

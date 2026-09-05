@@ -18,6 +18,15 @@ const byId = (id) => tabs.find((t) => t.id === id);
 // Inkognitofönster: alla dess flikar körs som inkognito och skalet får det mörka temat.
 const windowIncognito = new URLSearchParams(location.search).has('incognito');
 if (windowIncognito) document.body.classList.add('incog');
+document.body.classList.add('plat-' + ((window.view && window.view.platform) || 'linux'));
+function updateTitlebar() {
+  try {
+    const incog = document.body.classList.contains('incog');
+    const dark = document.documentElement.dataset.theme === 'dark';
+    const c = incog ? { color: '#0b0618', symbolColor: '#cbbde6' } : dark ? { color: '#0c0c0d', symbolColor: '#d4d4d8' } : { color: '#e7edf4', symbolColor: '#0e2a47' };
+    if (window.view && window.view.setTitlebar) window.view.setTitlebar(c);
+  } catch {}
+}
 
 /* ── URL-hjälp ── */
 const ENGINES = {
@@ -118,6 +127,7 @@ function showActiveTab() {
 function switchTab(tab) {
   active = tab;
   document.body.classList.toggle('incog', !!tab.incognito);
+  updateTitlebar();
   $('search-engine').textContent = tab.incognito ? INCOG_ENGINE.label : (ENGINES[searchEngine] || ENGINES.google).label;
   addressInput.value = tab.url ? pretty(tab.url) : '';
   setShield(tab.url ? (protectionOn ? (tab.verdict ? tab.verdict.status : 'ok') : 'off') : 'home');
@@ -558,6 +568,7 @@ document.documentElement.dataset.theme = theme;
 function setTheme(t) {
   theme = t === 'dark' ? 'dark' : 'light';
   document.documentElement.dataset.theme = theme;
+  updateTitlebar();
   try { localStorage.setItem('skoll-theme', theme); } catch {}
   const l = $('seg-light'), d = $('seg-dark');
   if (l) l.classList.toggle('on', theme === 'light');
@@ -640,6 +651,10 @@ function updateAccountBtn() {
   if (av) { btn.innerHTML = '<img src="' + av + '" alt="" class="acct-av">'; btn.classList.add('has-av'); }
   else { btn.innerHTML = '<svg class="ic"><use href="#i-user" /></svg>'; btn.classList.remove('has-av'); }
   greet(); if (typeof applyAuthGates === 'function') applyAuthGates();
+  // Kontobyte utan omstart: historiken är per konto → flytta ev. gammal global historik och rita om startsida + historikpanel
+  try { migrateHistoryToAccount(); } catch {}
+  try { if (typeof renderShortcuts === 'function' && $('shortcuts')) renderShortcuts(); } catch {}
+  try { if (typeof historyOpen !== 'undefined' && historyOpen) renderHistory(); } catch {}
 }
 function setLoginView(name) {
   const map = { login: 'login-form', signup: 'login-signup', code: 'login-code', reset: 'login-reset', resetconfirm: 'login-reset-confirm', account: 'login-account-view' };
@@ -669,9 +684,11 @@ function closeLogin() {
 function accountKey(a) { a = a || account; if (!a) return null; return 'k:' + (a.email || a.name || a.token || 'user'); }
 function loginAs(token, email, pro, name) {
   account = { token, email: email || '', pro: !!pro, name: name || '' };
+  socMe = null;   // förra kontots profil (bild m.m.) får inte hänga kvar
   unlockHistoryForParent();   // vuxenkonto → historiken går att rensa igen
   localStorage.setItem('skoll-account', JSON.stringify(account));
   updateAccountBtn();
+  try { loadSocMe().then(() => updateAccountBtn()); } catch {}   // hämta NYA kontots profilbild → kontoknappen
   try { window.session.login(accountKey(account)); } catch {}   // återställ kontots webbsession + lås upp lösenord
   if (pendingKryptoAfterLogin) { pendingKryptoAfterLogin = false; openKrypto(true); }
   else if (kryptoOpen) openKrypto(true);
@@ -679,7 +696,7 @@ function loginAs(token, email, pro, name) {
 function doLogout(reopenKrypto) {
   const t = account && account.token;
   const sk = account ? accountKey(account) : null;
-  account = null; localStorage.removeItem('skoll-account'); updateAccountBtn();
+  account = null; socMe = null; localStorage.removeItem('skoll-account'); updateAccountBtn();
   if (sk) { try { window.session.logout(sk); } catch {} }   // spara + rensa webbsession (utloggad ur Gmail m.fl.) + lås lösenord
   if (t) { try { window.auth.logout(t); } catch {} }
   setLoginView('login');
@@ -1130,8 +1147,22 @@ window.view.onFocusAddress(() => { addressInput.focus(); addressInput.select(); 
 window.view.onClearData(() => { const kept = !clearHistory(); if (typeof historyOpen !== 'undefined' && historyOpen) renderHistory(); showToast(kept ? 'Surfdata rensad – historiken sparas åt dina föräldrar.' : 'Surfdata rensad.'); });
 
 /* ── Historik ── */
-function getHistory() { try { const h = JSON.parse(localStorage.getItem('skoll-history')); return Array.isArray(h) ? h : []; } catch { return []; } }
-function saveHistory(h) { try { localStorage.setItem('skoll-history', JSON.stringify(h)); } catch {} }
+/* Historiken är PER KONTO (som cookies): 'skoll-history' = utloggad, 'skoll-history:<konto>' = inloggad.
+   Byter man konto utan att stänga webbläsaren ska förra kontots historik inte hänga kvar. */
+function histKey() { try { const k = (typeof account !== 'undefined' && account) ? accountKey(account) : null; return k ? 'skoll-history:' + k : 'skoll-history'; } catch { return 'skoll-history'; } }
+function getHistory() { try { const h = JSON.parse(localStorage.getItem(histKey())); return Array.isArray(h) ? h : []; } catch { return []; } }
+function saveHistory(h) { try { localStorage.setItem(histKey(), JSON.stringify(h)); } catch {} }
+/* Engångsflytt: den gamla globala historiken tillhör kontot som är inloggat vid första start efter uppdateringen. */
+function migrateHistoryToAccount() {
+  try {
+    if (localStorage.getItem('skoll-hist-per-account') === '1') return;
+    if (typeof account === 'undefined' || !account) return;
+    const k = histKey(); if (k === 'skoll-history') return;
+    const old = localStorage.getItem('skoll-history');
+    if (old && !localStorage.getItem(k)) { localStorage.setItem(k, old); localStorage.removeItem('skoll-history'); }
+    localStorage.setItem('skoll-hist-per-account', '1');
+  } catch {}
+}
 /* Barn får INTE radera sin historik — bara föräldern. Låset sitter kvar även om barnet
    loggar ut (flagga i localStorage) och släpps först när ett vuxenkonto loggar in. */
 function historyLocked() {
@@ -1141,7 +1172,7 @@ function historyLocked() {
 function lockHistoryForChild() { try { localStorage.setItem('skoll-hist-lock', '1'); } catch {} }
 function unlockHistoryForParent() { try { localStorage.removeItem('skoll-hist-lock'); } catch {} }
 function removeHistory(url) { if (historyLocked()) return false; saveHistory(getHistory().filter((e) => e.url !== url)); return true; }   // ta bort EN sida ur historiken
-function clearHistory() { if (historyLocked()) return false; try { localStorage.removeItem('skoll-history'); } catch {} return true; }   // ta bort allt
+function clearHistory() { if (historyLocked()) return false; try { localStorage.removeItem(histKey()); } catch {} return true; }   // ta bort allt
 function pushHistory(url, title, favicon) {
   if (!/^https?:/i.test(url)) return;
   const all = getHistory();

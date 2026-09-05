@@ -505,144 +505,136 @@
       </div>
     </div>
 
-    <!-- Inloggning (kontonummer) -->
-    <div id="login" class="hidden absolute inset-0 z-[70] grid place-items-center p-6" style="background: linear-gradient(160deg,#0e2a47,#14375c);">
-      <div class="w-full max-w-[420px] bg-white rounded-[20px] px-9 py-8 shadow-[0_30px_80px_rgba(0,0,0,.45)] relative">
-        <button id="login-close" class="absolute top-3.5 right-3.5 icon-btn w-8 h-8" style="color:var(--color-navy-900);"><svg class="ic ic-sm"><use href="#i-close" /></svg></button>
+    <!-- Inloggning — svart kortvy i samma stil som inställningarna (2026-09-05) -->
+    <div id="login" class="hidden absolute inset-0 z-[70] grid place-items-center p-6">
+      <div class="lg-card">
+        <button id="login-close" class="lg-close" title="Stäng"><svg class="ic ic-sm"><use href="#i-close" /></svg></button>
+        <div class="lg-brand"><span class="lg-mark"><svg class="ic"><use href="#i-shield" /></svg></span><span class="lg-brand-name">Prowl</span></div>
+
+        <div id="lg-seg" class="lg-seg">
+          <button id="to-login" type="button" class="lg-seg-btn on" data-view="login">Logga in</button>
+          <button id="to-signup" type="button" class="lg-seg-btn" data-view="signup">Skapa konto</button>
+        </div>
 
         <!-- Logga in (mejl + lösenord) -->
-        <div id="login-form">
-          <div class="flex flex-col items-center text-center mb-6">
-            <div class="w-14 h-14 grid place-items-center rounded-2xl mb-3" style="background:var(--color-navy-900);color:#fff;"><svg class="ic"><use href="#i-shield" /></svg></div>
-            <h1 class="text-[22px] font-extrabold text-navy-900">Logga in</h1>
-            <p class="text-[13.5px] text-navy-900/55 mt-1">Välkommen tillbaka till Prowl.</p>
+        <div id="login-form" class="lg-view">
+          <div class="lg-head">
+            <h1 class="lg-h">Logga in</h1>
+            <p class="lg-lead">Välkommen tillbaka till Prowl.</p>
           </div>
-          <label class="block text-[12px] font-semibold text-navy-900/70 mb-1.5">Mejladress</label>
-          <div class="flex items-center gap-2.5 h-12 px-3.5 rounded-xl border mb-3.5" style="border-color:var(--color-line);">
-            <span style="color:var(--color-navy-600);"><svg class="ic ic-sm"><use href="#i-user" /></svg></span>
-            <input id="login-email" type="email" inputmode="email" autocomplete="email" placeholder="du@exempel.se"
-                   class="flex-1 bg-transparent outline-none text-[15px] text-navy-900 placeholder:text-navy-900/35" />
+          <label class="lg-lbl">Mejladress</label>
+          <div class="lg-field">
+            <span class="lg-fi"><svg class="ic ic-sm"><use href="#i-user" /></svg></span>
+            <input id="login-email" type="email" inputmode="email" autocomplete="email" placeholder="du@exempel.se" class="lg-in" />
           </div>
-          <label class="block text-[12px] font-semibold text-navy-900/70 mb-1.5">Lösenord</label>
-          <div class="flex items-center gap-2.5 h-12 px-3.5 rounded-xl border" style="border-color:var(--color-line);">
-            <span style="color:var(--color-navy-600);"><svg class="ic ic-sm"><use href="#i-lock" /></svg></span>
-            <input id="login-pw" type="password" autocomplete="current-password" placeholder="Ditt lösenord"
-                   class="flex-1 bg-transparent outline-none text-[15px] text-navy-900 placeholder:text-navy-900/35" />
-            <button type="button" class="pw-eye" data-target="login-pw" title="Visa lösenord" style="color:var(--color-navy-600);cursor:pointer;"><svg class="ic ic-sm"><use href="#i-eye" /></svg></button>
+          <label class="lg-lbl">Lösenord</label>
+          <div class="lg-field">
+            <span class="lg-fi"><svg class="ic ic-sm"><use href="#i-lock" /></svg></span>
+            <input id="login-pw" type="password" autocomplete="current-password" placeholder="Ditt lösenord" class="lg-in" />
+            <button type="button" class="pw-eye lg-eye" data-target="login-pw" title="Visa lösenord"><svg class="ic ic-sm"><use href="#i-eye" /></svg></button>
           </div>
-          <div class="text-right mt-2"><button id="to-reset" type="button" class="text-[12.5px] font-semibold" style="color:var(--color-terra);">Glömt lösenord?</button></div>
-          <div id="login-error" class="text-[12.5px] mt-2.5" style="color:var(--color-danger);display:none;"></div>
-          <button id="login-submit" class="btn w-full mt-5 text-white" style="background:var(--color-terra);">Logga in</button>
-          <p class="text-center text-[12.5px] text-navy-900/55 mt-4">Har du inget konto? <button id="to-signup" class="font-semibold" style="color:var(--color-terra);">Skapa ett här</button></p>
+          <div class="lg-right"><button id="to-reset" type="button" class="lg-link">Glömt lösenord?</button></div>
+          <div id="login-error" class="lg-err" style="display:none;"></div>
+          <button id="login-submit" class="lg-btn">Logga in</button>
         </div>
 
         <!-- Skapa konto (namn + mejl + lösenord) -->
-        <div id="login-signup" style="display:none;">
-          <div class="flex flex-col items-center text-center mb-6">
-            <div class="w-14 h-14 grid place-items-center rounded-2xl mb-3" style="background:var(--color-navy-900);color:#fff;"><svg class="ic"><use href="#i-user" /></svg></div>
-            <h1 class="text-[22px] font-extrabold text-navy-900">Skapa konto</h1>
-            <p class="text-[13.5px] text-navy-900/55 mt-1">Kom igång med Prowl på en minut.</p>
+        <div id="login-signup" class="lg-view" style="display:none;">
+          <div class="lg-head">
+            <h1 class="lg-h">Skapa konto</h1>
+            <p class="lg-lead">Kom igång med Prowl på en minut.</p>
           </div>
-          <label class="block text-[12px] font-semibold text-navy-900/70 mb-1.5">Namn</label>
-          <div class="flex items-center gap-2.5 h-12 px-3.5 rounded-xl border mb-3.5" style="border-color:var(--color-line);">
-            <span style="color:var(--color-navy-600);"><svg class="ic ic-sm"><use href="#i-user" /></svg></span>
-            <input id="signup-name" autocomplete="name" maxlength="40" placeholder="Ditt namn"
-                   class="flex-1 bg-transparent outline-none text-[15px] text-navy-900 placeholder:text-navy-900/35" />
+          <label class="lg-lbl">Namn</label>
+          <div class="lg-field">
+            <span class="lg-fi"><svg class="ic ic-sm"><use href="#i-user" /></svg></span>
+            <input id="signup-name" autocomplete="name" maxlength="40" placeholder="Ditt namn" class="lg-in" />
           </div>
-          <label class="block text-[12px] font-semibold text-navy-900/70 mb-1.5">Mejladress</label>
-          <div class="flex items-center gap-2.5 h-12 px-3.5 rounded-xl border mb-3.5" style="border-color:var(--color-line);">
-            <span style="color:var(--color-navy-600);"><svg class="ic ic-sm"><use href="#i-user" /></svg></span>
-            <input id="signup-email" type="email" inputmode="email" autocomplete="email" placeholder="du@exempel.se"
-                   class="flex-1 bg-transparent outline-none text-[15px] text-navy-900 placeholder:text-navy-900/35" />
+          <label class="lg-lbl">Mejladress</label>
+          <div class="lg-field">
+            <span class="lg-fi"><svg class="ic ic-sm"><use href="#i-user" /></svg></span>
+            <input id="signup-email" type="email" inputmode="email" autocomplete="email" placeholder="du@exempel.se" class="lg-in" />
           </div>
-          <label class="block text-[12px] font-semibold text-navy-900/70 mb-1.5">Lösenord</label>
-          <div class="flex items-center gap-2.5 h-12 px-3.5 rounded-xl border" style="border-color:var(--color-line);">
-            <span style="color:var(--color-navy-600);"><svg class="ic ic-sm"><use href="#i-lock" /></svg></span>
-            <input id="signup-pw" type="password" autocomplete="new-password" placeholder="Minst 6 tecken"
-                   class="flex-1 bg-transparent outline-none text-[15px] text-navy-900 placeholder:text-navy-900/35" />
-            <button type="button" class="pw-eye" data-target="signup-pw" title="Visa lösenord" style="color:var(--color-navy-600);cursor:pointer;"><svg class="ic ic-sm"><use href="#i-eye" /></svg></button>
+          <label class="lg-lbl">Lösenord</label>
+          <div class="lg-field">
+            <span class="lg-fi"><svg class="ic ic-sm"><use href="#i-lock" /></svg></span>
+            <input id="signup-pw" type="password" autocomplete="new-password" placeholder="Minst 6 tecken" class="lg-in" />
+            <button type="button" class="pw-eye lg-eye" data-target="signup-pw" title="Visa lösenord"><svg class="ic ic-sm"><use href="#i-eye" /></svg></button>
           </div>
-          <div id="signup-error" class="text-[12.5px] mt-2.5" style="color:var(--color-danger);display:none;"></div>
-          <button id="signup-submit" class="btn w-full mt-5 text-white" style="background:var(--color-terra);">Skapa konto</button>
-          <p class="text-center text-[12.5px] text-navy-900/55 mt-4">Har du redan ett konto? <button id="to-login" class="font-semibold" style="color:var(--color-terra);">Logga in</button></p>
+          <div id="signup-error" class="lg-err" style="display:none;"></div>
+          <button id="signup-submit" class="lg-btn">Skapa konto</button>
         </div>
 
         <!-- Verifiering (2FA-kod — både logga in och skapa konto) -->
-        <div id="login-code" style="display:none;">
-          <div class="flex flex-col items-center text-center mb-6">
-            <div class="w-14 h-14 grid place-items-center rounded-2xl mb-3" style="background:var(--color-navy-900);color:#fff;"><svg class="ic"><use href="#i-lock" /></svg></div>
-            <h1 class="text-[22px] font-extrabold text-navy-900">Verifiera din mejl</h1>
-            <p class="text-[13.5px] text-navy-900/55 mt-1">Vi skickade en 6-siffrig kod till<br><span id="code-email-shown" class="font-semibold text-navy-900"></span></p>
+        <div id="login-code" class="lg-view" style="display:none;">
+          <div class="lg-head">
+            <span class="lg-ico"><svg class="ic"><use href="#i-lock" /></svg></span>
+            <h1 class="lg-h">Verifiera din mejl</h1>
+            <p class="lg-lead">Vi skickade en 6-siffrig kod till<br><span id="code-email-shown" class="lg-strong"></span></p>
           </div>
-          <input id="login-code-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"
-                 class="w-full h-14 text-center bg-transparent outline-none text-[26px] font-mono font-bold tracking-[0.4em] text-navy-900 placeholder:text-navy-900/25 rounded-xl border" style="border-color:var(--color-line);" />
-          <div id="code-error" class="text-[12.5px] mt-2.5 text-center" style="color:var(--color-danger);display:none;"></div>
-          <button id="code-submit" class="btn w-full mt-5 text-white" style="background:var(--color-terra);">Verifiera</button>
-          <div class="flex items-center justify-between mt-4 text-[12.5px]">
-            <button id="code-back" class="font-semibold text-navy-900/55">← Tillbaka</button>
-            <button id="code-resend" class="font-semibold" style="color:var(--color-terra);">Skicka ny kod</button>
+          <input id="login-code-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" class="lg-code" />
+          <div id="code-error" class="lg-err center" style="display:none;"></div>
+          <button id="code-submit" class="lg-btn">Verifiera</button>
+          <div class="lg-row">
+            <button id="code-back" type="button" class="lg-link dim">← Tillbaka</button>
+            <button id="code-resend" type="button" class="lg-link">Skicka ny kod</button>
           </div>
         </div>
 
         <!-- Glömt lösenord: begär kod -->
-        <div id="login-reset" style="display:none;">
-          <div class="flex flex-col items-center text-center mb-6">
-            <div class="w-14 h-14 grid place-items-center rounded-2xl mb-3" style="background:var(--color-navy-900);color:#fff;"><svg class="ic"><use href="#i-lock" /></svg></div>
-            <h1 class="text-[22px] font-extrabold text-navy-900">Glömt lösenord?</h1>
-            <p class="text-[13.5px] text-navy-900/55 mt-1">Skriv din mejl så skickar vi en återställningskod.</p>
+        <div id="login-reset" class="lg-view" style="display:none;">
+          <div class="lg-head">
+            <span class="lg-ico"><svg class="ic"><use href="#i-key" /></svg></span>
+            <h1 class="lg-h">Glömt lösenord?</h1>
+            <p class="lg-lead">Skriv din mejl så skickar vi en återställningskod.</p>
           </div>
-          <label class="block text-[12px] font-semibold text-navy-900/70 mb-1.5">Mejladress</label>
-          <div class="flex items-center gap-2.5 h-12 px-3.5 rounded-xl border" style="border-color:var(--color-line);">
-            <span style="color:var(--color-navy-600);"><svg class="ic ic-sm"><use href="#i-user" /></svg></span>
-            <input id="reset-email" type="email" inputmode="email" autocomplete="email" placeholder="du@exempel.se"
-                   class="flex-1 bg-transparent outline-none text-[15px] text-navy-900 placeholder:text-navy-900/35" />
+          <label class="lg-lbl">Mejladress</label>
+          <div class="lg-field">
+            <span class="lg-fi"><svg class="ic ic-sm"><use href="#i-user" /></svg></span>
+            <input id="reset-email" type="email" inputmode="email" autocomplete="email" placeholder="du@exempel.se" class="lg-in" />
           </div>
-          <div id="reset-error" class="text-[12.5px] mt-2.5" style="color:var(--color-danger);display:none;"></div>
-          <button id="reset-send" class="btn w-full mt-5 text-white" style="background:var(--color-terra);">Skicka kod</button>
-          <p class="text-center text-[12.5px] text-navy-900/55 mt-4"><button id="reset-back" type="button" class="font-semibold" style="color:var(--color-terra);">← Tillbaka till inloggning</button></p>
+          <div id="reset-error" class="lg-err" style="display:none;"></div>
+          <button id="reset-send" class="lg-btn">Skicka kod</button>
+          <div class="lg-row center"><button id="reset-back" type="button" class="lg-link dim">← Tillbaka till inloggning</button></div>
         </div>
 
         <!-- Glömt lösenord: kod + nytt lösenord -->
-        <div id="login-reset-confirm" style="display:none;">
-          <div class="flex flex-col items-center text-center mb-6">
-            <div class="w-14 h-14 grid place-items-center rounded-2xl mb-3" style="background:var(--color-navy-900);color:#fff;"><svg class="ic"><use href="#i-lock" /></svg></div>
-            <h1 class="text-[22px] font-extrabold text-navy-900">Nytt lösenord</h1>
-            <p class="text-[13.5px] text-navy-900/55 mt-1">Skriv koden vi mejlade och välj ett nytt lösenord.</p>
+        <div id="login-reset-confirm" class="lg-view" style="display:none;">
+          <div class="lg-head">
+            <span class="lg-ico"><svg class="ic"><use href="#i-key" /></svg></span>
+            <h1 class="lg-h">Nytt lösenord</h1>
+            <p class="lg-lead">Skriv koden vi mejlade och välj ett nytt lösenord.</p>
           </div>
-          <label class="block text-[12px] font-semibold text-navy-900/70 mb-1.5">Kod</label>
-          <div class="flex items-center gap-2.5 h-12 px-3.5 rounded-xl border mb-3.5" style="border-color:var(--color-line);">
-            <span style="color:var(--color-navy-600);"><svg class="ic ic-sm"><use href="#i-lock" /></svg></span>
-            <input id="reset-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"
-                   class="flex-1 bg-transparent outline-none text-[15px] tracking-[0.2em] font-mono text-navy-900 placeholder:text-navy-900/35" />
+          <label class="lg-lbl">Kod</label>
+          <div class="lg-field">
+            <span class="lg-fi"><svg class="ic ic-sm"><use href="#i-lock" /></svg></span>
+            <input id="reset-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" class="lg-in mono" />
           </div>
-          <label class="block text-[12px] font-semibold text-navy-900/70 mb-1.5">Nytt lösenord</label>
-          <div class="flex items-center gap-2.5 h-12 px-3.5 rounded-xl border" style="border-color:var(--color-line);">
-            <span style="color:var(--color-navy-600);"><svg class="ic ic-sm"><use href="#i-lock" /></svg></span>
-            <input id="reset-pw" type="password" autocomplete="new-password" placeholder="Minst 6 tecken"
-                   class="flex-1 bg-transparent outline-none text-[15px] text-navy-900 placeholder:text-navy-900/35" />
-            <button type="button" class="pw-eye" data-target="reset-pw" title="Visa lösenord" style="color:var(--color-navy-600);cursor:pointer;"><svg class="ic ic-sm"><use href="#i-eye" /></svg></button>
+          <label class="lg-lbl">Nytt lösenord</label>
+          <div class="lg-field">
+            <span class="lg-fi"><svg class="ic ic-sm"><use href="#i-lock" /></svg></span>
+            <input id="reset-pw" type="password" autocomplete="new-password" placeholder="Minst 6 tecken" class="lg-in" />
+            <button type="button" class="pw-eye lg-eye" data-target="reset-pw" title="Visa lösenord"><svg class="ic ic-sm"><use href="#i-eye" /></svg></button>
           </div>
-          <div id="reset-confirm-error" class="text-[12.5px] mt-2.5" style="color:var(--color-danger);display:none;"></div>
-          <button id="reset-confirm-submit" class="btn w-full mt-5 text-white" style="background:var(--color-terra);">Återställ lösenord</button>
-          <div class="flex items-center justify-between mt-4 text-[12.5px]">
-            <button id="reset-confirm-back" class="font-semibold text-navy-900/55">← Tillbaka</button>
-            <button id="reset-resend" class="font-semibold" style="color:var(--color-terra);">Skicka ny kod</button>
+          <div id="reset-confirm-error" class="lg-err" style="display:none;"></div>
+          <button id="reset-confirm-submit" class="lg-btn">Återställ lösenord</button>
+          <div class="lg-row">
+            <button id="reset-confirm-back" type="button" class="lg-link dim">← Tillbaka</button>
+            <button id="reset-resend" type="button" class="lg-link">Skicka ny kod</button>
           </div>
         </div>
 
         <!-- Inloggad -->
-        <div id="login-account-view" style="display:none;">
-          <div class="flex flex-col items-center text-center">
-            <div class="w-14 h-14 grid place-items-center rounded-full mb-3" style="background:var(--color-safe);color:#fff;"><svg class="ic"><use href="#i-shield-check" /></svg></div>
-            <h1 class="text-[20px] font-extrabold text-navy-900">Inloggad</h1>
-            <p class="text-[13.5px] text-navy-900/55 mt-1"><span id="login-email-shown" class="font-semibold text-navy-900"></span></p>
-            <span id="login-pro-badge" class="items-center gap-1.5 mt-3 px-3 py-1 rounded-full text-[12px] font-bold" style="display:none;background:color-mix(in srgb, var(--color-terra) 15%, #fff);color:var(--color-terra);">✦ Prowl Pro</span>
-            <div class="w-full mt-6 rounded-xl p-4 text-left" style="background:var(--color-paper);">
-              <div class="flex items-center gap-2.5 text-[13px] text-navy-900/75"><svg class="ic ic-sm" style="color:var(--color-safe);"><use href="#i-shield-check" /></svg>Skydd aktivt på den här datorn</div>
-            </div>
-            <button id="logout-btn" class="btn btn-safe w-full mt-5">Logga ut</button>
+        <div id="login-account-view" class="lg-view" style="display:none;">
+          <div class="lg-head">
+            <span class="lg-ico ok"><svg class="ic"><use href="#i-shield-check" /></svg></span>
+            <h1 class="lg-h">Inloggad</h1>
+            <p class="lg-lead"><span id="login-email-shown" class="lg-strong"></span></p>
+            <span id="login-pro-badge" class="lg-chip" style="display:none;">✦ Prowl Pro</span>
           </div>
+          <div class="lg-status"><svg class="ic ic-sm"><use href="#i-shield-check" /></svg><span>Skydd aktivt på den här datorn</span></div>
+          <button id="logout-btn" class="lg-btn ghost">Logga ut</button>
         </div>
+
       </div>
     </div>
 

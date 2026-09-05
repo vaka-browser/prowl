@@ -1277,6 +1277,8 @@ $('bookmarks-close').addEventListener('click', closeBookmarks);
 window.view.onOpenBookmarks(() => openBookmarks());
 
 /* ── Nedladdningar ── */
+/* Översättning med platshållare: svenska nyckeln innehåller {n} (namn/tal). */
+function tn(sv, n) { const s = (typeof window.t === 'function') ? window.t(sv) : sv; return s.split('{n}').join(String(n)); }
 const dlMap = new Map();
 function fmtBytes(n) { if (!n) return '0 B'; const u = ['B', 'KB', 'MB', 'GB']; let i = 0; while (n >= 1024 && i < 3) { n /= 1024; i++; } return n.toFixed(i ? 1 : 0) + ' ' + u[i]; }
 function renderDownloads() {

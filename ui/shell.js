@@ -378,6 +378,7 @@ async function initAdblock() {
   $('adcount').textContent = st.count;
   $('adblock').classList.toggle('off', !st.on);
   window.skoll.onAdblockCount((n) => { $('adcount').textContent = n; });
+}
 
 /* ── Skyddsstatistik på startsidan (kumulativt, sparat lokalt) ── */
 let stats = { ads: 0, trackers: 0, dangers: 0 };
@@ -396,7 +397,6 @@ function bumpStat(key, n) {
 }
 window.skoll.onAdblockHit((type) => bumpStat(type === 'tracker' ? 'trackers' : 'ads', 1));
 renderStats();
-}
 $('adblock').addEventListener('click', () => setAdblock($('adblock').classList.contains('off')));
 
 /* ── Krypto (kräver inloggning + Pro) ── */

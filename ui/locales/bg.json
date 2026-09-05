@@ -707,5 +707,15 @@
  "Avsluta": "Край",
  "En ny version finns": "Налична е нова версия",
  "Klipp ut": "Изрежете",
- "Nedladdade filer": "Изтеглени файлове"
+ "Nedladdade filer": "Изтеглени файлове",
+ "Pausa": "Пауза",
+ "Fortsätt": "Продължи",
+ "Pausad": "На пауза",
+ "Klar": "Готово",
+ "Avbruten": "Отменено",
+ "Misslyckades": "Неуспешно",
+ "Klar (behållen)": "Готово (Запазено)",
+ "hämtat…": "взети...",
+ "Blockerad": "блокиран",
+ "hot": "заплаха"
 }

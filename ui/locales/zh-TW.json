@@ -707,5 +707,15 @@
  "Avsluta": "結尾",
  "En ny version finns": "有新版本可用",
  "Klipp ut": "剪下",
- "Nedladdade filer": "下載的文件"
+ "Nedladdade filer": "下載的文件",
+ "Pausa": "暫停",
+ "Fortsätt": "繼續",
+ "Pausad": "已暫停",
+ "Klar": "完畢",
+ "Avbruten": "取消",
+ "Misslyckades": "失敗的",
+ "Klar (behållen)": "完成（保留）",
+ "hämtat…": "取來…",
+ "Blockerad": "被阻止",
+ "hot": "威脅"
 }

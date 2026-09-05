@@ -707,5 +707,15 @@
  "Avsluta": "จบ",
  "En ny version finns": "มีเวอร์ชันใหม่ให้ใช้งานแล้ว",
  "Klipp ut": "ตัดออก",
- "Nedladdade filer": "ไฟล์ที่ดาวน์โหลด"
+ "Nedladdade filer": "ไฟล์ที่ดาวน์โหลด",
+ "Pausa": "หยุดชั่วคราว",
+ "Fortsätt": "ดำเนินการต่อ",
+ "Pausad": "หยุดชั่วคราว",
+ "Klar": "เสร็จแล้ว",
+ "Avbruten": "ยกเลิก",
+ "Misslyckades": "ล้มเหลว",
+ "Klar (behållen)": "เสร็จแล้ว(คงอยู่)",
+ "hämtat…": "ดึงมา…",
+ "Blockerad": "ถูกบล็อก",
+ "hot": "ภัยคุกคาม"
 }

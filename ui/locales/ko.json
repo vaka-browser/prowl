@@ -707,5 +707,15 @@
  "Avsluta": "끝",
  "En ny version finns": "새 버전을 사용할 수 있습니다.",
  "Klipp ut": "잘라내기",
- "Nedladdade filer": "다운로드한 파일"
+ "Nedladdade filer": "다운로드한 파일",
+ "Pausa": "정지시키다",
+ "Fortsätt": "계속하다",
+ "Pausad": "일시중지됨",
+ "Klar": "완료",
+ "Avbruten": "취소",
+ "Misslyckades": "실패한",
+ "Klar (behållen)": "완료(보존)",
+ "hämtat…": "가져온…",
+ "Blockerad": "막힌",
+ "hot": "위협"
 }

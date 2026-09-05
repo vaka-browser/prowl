@@ -707,5 +707,15 @@
  "Avsluta": "پایان",
  "En ny version finns": "نسخه جدید موجود است",
  "Klipp ut": "قطع کن",
- "Nedladdade filer": "فایل های دانلود شده"
+ "Nedladdade filer": "فایل های دانلود شده",
+ "Pausa": "مکث کنید",
+ "Fortsätt": "ادامه دهید",
+ "Pausad": "مکث کرد",
+ "Klar": "انجام شد",
+ "Avbruten": "لغو شد",
+ "Misslyckades": "شکست خورد",
+ "Klar (behållen)": "انجام شد (حفظ)",
+ "hämtat…": "واکشی…",
+ "Blockerad": "مسدود شده است",
+ "hot": "تهدید"
 }

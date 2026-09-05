@@ -700,5 +700,15 @@
  "Avsluta": "Enda",
  "En ny version finns": "Ný útgáfa er fáanleg",
  "Klipp ut": "Klipptu út",
- "Nedladdade filer": "Sóttar skrár"
+ "Nedladdade filer": "Sóttar skrár",
+ "Pausa": "Gera hlé",
+ "Fortsätt": "Halda áfram",
+ "Pausad": "Gert hlé",
+ "Klar": "Búið",
+ "Avbruten": "Hætt við",
+ "Misslyckades": "Mistókst",
+ "Klar (behållen)": "Búið (geymt)",
+ "hämtat…": "sótt…",
+ "Blockerad": "Lokað",
+ "hot": "hótun"
 }

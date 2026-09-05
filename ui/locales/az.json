@@ -670,5 +670,15 @@
  "Surfdata rensad – historiken sparas åt dina föräldrar.": "Baxış datası silindi - tarixçə valideynləriniz üçün yadda saxlanılır.",
  "Giltigt till": "üçün etibarlıdır",
  "Hantera kort": "Kartları idarə edin",
- "Välj kort": "Kart seçin"
+ "Välj kort": "Kart seçin",
+ "Pausa": "Fasilə",
+ "Fortsätt": "Davam et",
+ "Pausad": "Fasilə verildi",
+ "Klar": "Bitdi",
+ "Avbruten": "Ləğv edildi",
+ "Misslyckades": "Uğursuz oldu",
+ "Klar (behållen)": "Bitdi (saxlanılır)",
+ "hämtat…": "gətirildi...",
+ "Blockerad": "Blok edilib",
+ "hot": "təhlükə"
 }

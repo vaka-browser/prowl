@@ -707,5 +707,15 @@
  "Avsluta": "Konec",
  "En ny version finns": "Na voljo je nova različica",
  "Klipp ut": "Izrežite",
- "Nedladdade filer": "Prenesene datoteke"
+ "Nedladdade filer": "Prenesene datoteke",
+ "Pausa": "Premor",
+ "Fortsätt": "Nadaljuj",
+ "Pausad": "Zaustavljeno",
+ "Klar": "Končano",
+ "Avbruten": "Preklicano",
+ "Misslyckades": "Ni uspelo",
+ "Klar (behållen)": "Končano (ohranjeno)",
+ "hämtat…": "pridobljeno ...",
+ "Blockerad": "blokiran",
+ "hot": "grožnja"
 }

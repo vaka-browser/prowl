@@ -707,5 +707,15 @@
  "Avsluta": "Τέλος",
  "En ny version finns": "Μια νέα έκδοση είναι διαθέσιμη",
  "Klipp ut": "Κόβω",
- "Nedladdade filer": "Ληφθέντα αρχεία"
+ "Nedladdade filer": "Ληφθέντα αρχεία",
+ "Pausa": "Παύση",
+ "Fortsätt": "Συνεχίζω",
+ "Pausad": "Σε παύση",
+ "Klar": "Γινώμενος",
+ "Avbruten": "Ακυρώθηκε",
+ "Misslyckades": "Αποτυχημένος",
+ "Klar (behållen)": "Έγινε (Διατηρήθηκε)",
+ "hämtat…": "παρέλαβε…",
+ "Blockerad": "Αποκλεισμένος",
+ "hot": "απειλή"
 }

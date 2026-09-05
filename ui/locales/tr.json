@@ -707,5 +707,15 @@
  "Avsluta": "Son",
  "En ny version finns": "Yeni bir sürüm mevcut",
  "Klipp ut": "Kesmek",
- "Nedladdade filer": "İndirilen dosyalar"
+ "Nedladdade filer": "İndirilen dosyalar",
+ "Pausa": "Duraklat",
+ "Fortsätt": "Devam etmek",
+ "Pausad": "Duraklatıldı",
+ "Klar": "Tamamlamak",
+ "Avbruten": "İptal edildi",
+ "Misslyckades": "Arızalı",
+ "Klar (behållen)": "Tamamlandı (Tutuldu)",
+ "hämtat…": "getirildi…",
+ "Blockerad": "Engellendi",
+ "hot": "tehdit"
 }

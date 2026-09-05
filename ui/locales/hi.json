@@ -707,5 +707,15 @@
  "Avsluta": "अंत",
  "En ny version finns": "एक नया संस्करण उपलब्ध है",
  "Klipp ut": "कट आउट",
- "Nedladdade filer": "डाउनलोड की गई फ़ाइलें"
+ "Nedladdade filer": "डाउनलोड की गई फ़ाइलें",
+ "Pausa": "विराम",
+ "Fortsätt": "जारी रखना",
+ "Pausad": "रुका हुआ",
+ "Klar": "हो गया",
+ "Avbruten": "रद्द कर दिया गया",
+ "Misslyckades": "असफल",
+ "Klar (behållen)": "हो गया (बरकरार रखा गया)",
+ "hämtat…": "लाया गया...",
+ "Blockerad": "अवरोधित",
+ "hot": "धमकी"
 }

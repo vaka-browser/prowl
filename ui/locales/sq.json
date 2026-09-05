@@ -707,5 +707,15 @@
  "Avsluta": "fund",
  "En ny version finns": "Një version i ri është në dispozicion",
  "Klipp ut": "Prerë jashtë",
- "Nedladdade filer": "Skedarët e shkarkuar"
+ "Nedladdade filer": "Skedarët e shkarkuar",
+ "Pausa": "Ndalo",
+ "Fortsätt": "Vazhdoni",
+ "Pausad": "Në pauzë",
+ "Klar": "U krye",
+ "Avbruten": "Anuluar",
+ "Misslyckades": "Dështoi",
+ "Klar (behållen)": "U krye (i ruajtur)",
+ "hämtat…": "e marrë…",
+ "Blockerad": "E bllokuar",
+ "hot": "kërcënim"
 }

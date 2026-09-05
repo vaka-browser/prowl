@@ -707,5 +707,15 @@
  "Avsluta": "終わり",
  "En ny version finns": "新しいバージョンが利用可能です",
  "Klipp ut": "切り取る",
- "Nedladdade filer": "ダウンロードされたファイル"
+ "Nedladdade filer": "ダウンロードされたファイル",
+ "Pausa": "一時停止",
+ "Fortsätt": "続く",
+ "Pausad": "一時停止中",
+ "Klar": "終わり",
+ "Avbruten": "キャンセル",
+ "Misslyckades": "失敗した",
+ "Klar (behållen)": "完了 (保留)",
+ "hämtat…": "取ってきた…",
+ "Blockerad": "ブロックされました",
+ "hot": "脅威"
 }

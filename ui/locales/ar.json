@@ -707,5 +707,15 @@
  "Avsluta": "نهاية",
  "En ny version finns": "نسخة جديدة متاحة",
  "Klipp ut": "قطع",
- "Nedladdade filer": "الملفات التي تم تنزيلها"
+ "Nedladdade filer": "الملفات التي تم تنزيلها",
+ "Pausa": "يوقف",
+ "Fortsätt": "يكمل",
+ "Pausad": "متوقف مؤقتًا",
+ "Klar": "منتهي",
+ "Avbruten": "تم الإلغاء",
+ "Misslyckades": "فشل",
+ "Klar (behållen)": "تم (الاحتفاظ به)",
+ "hämtat…": "جلبت…",
+ "Blockerad": "محظور",
+ "hot": "تهديد"
 }

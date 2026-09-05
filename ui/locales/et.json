@@ -707,5 +707,15 @@
  "Avsluta": "Lõpp",
  "En ny version finns": "Saadaval on uus versioon",
  "Klipp ut": "Lõika välja",
- "Nedladdade filer": "Allalaaditud failid"
+ "Nedladdade filer": "Allalaaditud failid",
+ "Pausa": "Paus",
+ "Fortsätt": "Jätka",
+ "Pausad": "Peatatud",
+ "Klar": "Valmis",
+ "Avbruten": "Tühistatud",
+ "Misslyckades": "Ebaõnnestunud",
+ "Klar (behållen)": "Valmis (säilitatud)",
+ "hämtat…": "toodud…",
+ "Blockerad": "Blokeeritud",
+ "hot": "oht"
 }

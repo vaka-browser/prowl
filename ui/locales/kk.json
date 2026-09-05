@@ -670,5 +670,15 @@
  "Surfdata rensad – historiken sparas åt dina föräldrar.": "Шолу деректері тазартылды - тарих ата-анаңыз үшін сақталады.",
  "Giltigt till": "дейін жарамды",
  "Välj kort": "Картаны таңдаңыз",
- "Hantera kort": "Карталарды басқару"
+ "Hantera kort": "Карталарды басқару",
+ "Pausa": "Кідірту",
+ "Fortsätt": "Жалғастыру",
+ "Pausad": "Кідіртілді",
+ "Klar": "Дайын",
+ "Avbruten": "Бас тартылды",
+ "Misslyckades": "Сәтсіз",
+ "Klar (behållen)": "Дайын (сақталды)",
+ "hämtat…": "әкелінді…",
+ "Blockerad": "Блокталған",
+ "hot": "қауіп"
 }

@@ -707,5 +707,15 @@
  "Avsluta": "tamat",
  "En ny version finns": "Versi baharu tersedia",
  "Klipp ut": "Potong",
- "Nedladdade filer": "Fail yang dimuat turun"
+ "Nedladdade filer": "Fail yang dimuat turun",
+ "Pausa": "jeda",
+ "Fortsätt": "teruskan",
+ "Pausad": "Dijeda",
+ "Klar": "Selesai",
+ "Avbruten": "Dibatalkan",
+ "Misslyckades": "gagal",
+ "Klar (behållen)": "Selesai (Dikekalkan)",
+ "hämtat…": "diambil…",
+ "Blockerad": "Disekat",
+ "hot": "ancaman"
 }

@@ -707,5 +707,15 @@
  "Avsluta": "Конец",
  "En ny version finns": "Доступна новая версия",
  "Klipp ut": "Вырезать",
- "Nedladdade filer": "Загруженные файлы"
+ "Nedladdade filer": "Загруженные файлы",
+ "Pausa": "Пауза",
+ "Fortsätt": "Продолжать",
+ "Pausad": "Приостановлено",
+ "Klar": "Сделанный",
+ "Avbruten": "Отменено",
+ "Misslyckades": "Неуспешный",
+ "Klar (behållen)": "Готово (сохранено)",
+ "hämtat…": "принес…",
+ "Blockerad": "Заблокировано",
+ "hot": "угроза"
 }

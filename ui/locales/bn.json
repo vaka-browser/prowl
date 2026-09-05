@@ -707,5 +707,15 @@
  "Avsluta": "শেষ",
  "En ny version finns": "একটি নতুন সংস্করণ উপলব্ধ",
  "Klipp ut": "কাটা আউট",
- "Nedladdade filer": "ডাউনলোড করা ফাইল"
+ "Nedladdade filer": "ডাউনলোড করা ফাইল",
+ "Pausa": "বিরতি",
+ "Fortsätt": "চালিয়ে যান",
+ "Pausad": "বিরতি দেওয়া হয়েছে",
+ "Klar": "সম্পন্ন",
+ "Avbruten": "বাতিল",
+ "Misslyckades": "ব্যর্থ হয়েছে",
+ "Klar (behållen)": "সম্পন্ন (বহাল রাখা)",
+ "hämtat…": "আনা হয়েছে...",
+ "Blockerad": "অবরুদ্ধ",
+ "hot": "হুমকি"
 }

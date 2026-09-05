@@ -707,5 +707,15 @@
  "Avsluta": "Kraj",
  "En ny version finns": "Dostupna je nova verzija",
  "Klipp ut": "Izrezati",
- "Nedladdade filer": "Preuzete datoteke"
+ "Nedladdade filer": "Preuzete datoteke",
+ "Pausa": "Pauza",
+ "Fortsätt": "Nastaviti",
+ "Pausad": "Pauzirano",
+ "Klar": "Gotovo",
+ "Avbruten": "Otkazano",
+ "Misslyckades": "nije uspjelo",
+ "Klar (behållen)": "Gotovo (zadržano)",
+ "hämtat…": "dohvatio…",
+ "Blockerad": "Blokiran",
+ "hot": "prijetnja"
 }

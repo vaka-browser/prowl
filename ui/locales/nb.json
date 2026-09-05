@@ -670,5 +670,15 @@
  "Surfdata rensad – historiken sparas åt dina föräldrar.": "Nettleserdata slettet – loggen lagres for foreldrene dine.",
  "Välj kort": "Velg kort",
  "Giltigt till": "Gyldig til",
- "Hantera kort": "Administrer kort"
+ "Hantera kort": "Administrer kort",
+ "Pausa": "Pause",
+ "Fortsätt": "Fortsette",
+ "Pausad": "Pause",
+ "Klar": "Ferdig",
+ "Avbruten": "Kansellert",
+ "Misslyckades": "Mislyktes",
+ "Klar (behållen)": "Ferdig (beholdt)",
+ "hämtat…": "hentet...",
+ "Blockerad": "Blokkert",
+ "hot": "trussel"
 }

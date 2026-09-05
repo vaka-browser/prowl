@@ -707,5 +707,15 @@
  "Avsluta": "Konec",
  "En ny version finns": "K dispozici je nová verze",
  "Klipp ut": "Vystřihnout",
- "Nedladdade filer": "Stažené soubory"
+ "Nedladdade filer": "Stažené soubory",
+ "Pausa": "Pauza",
+ "Fortsätt": "Pokračovat",
+ "Pausad": "Pozastaveno",
+ "Klar": "Hotovo",
+ "Avbruten": "Zrušeno",
+ "Misslyckades": "Nepodařilo se",
+ "Klar (behållen)": "Hotovo (zachováno)",
+ "hämtat…": "staženo…",
+ "Blockerad": "Blokováno",
+ "hot": "ohrožení"
 }

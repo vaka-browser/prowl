@@ -85,7 +85,7 @@
  "Användarnamn": "Benutzername",
  "Används när du söker i adressfältet.": "Wird bei der Suche in der Adressleiste verwendet.",
  "🤖 Låt Krypto handla åt mig": "🤖 Lass Krypto für mich einkaufen",
- "Avbryt": "Stornieren",
+ "Avbryt": "Abbrechen",
  "Bakgrund": "Hintergrund",
  "Be Krypto köpa saker (t.ex. mat) med dina sparade kort. Du godkänner alltid varje köp – med en säkerhetskoll – innan betalning.": "Bitten Sie Krypto, mit Ihren gespeicherten Karten Dinge (z. B. Lebensmittel) zu kaufen. Sie genehmigen jeden Einkauf immer – mit einer Sicherheitsüberprüfung – vor der Zahlung.",
  "Autofyll & lösenord": "Automatisches Ausfüllen und Passwort",
@@ -707,5 +707,15 @@
  "Avsluta": "Ende",
  "En ny version finns": "Eine neue Version ist verfügbar",
  "Klipp ut": "Ausgeschnitten",
- "Nedladdade filer": "Heruntergeladene Dateien"
+ "Nedladdade filer": "Heruntergeladene Dateien",
+ "Pausa": "Pausieren",
+ "Fortsätt": "Fortsetzen",
+ "Pausad": "Pausiert",
+ "Klar": "Fertig",
+ "Avbruten": "Abgebrochen",
+ "Misslyckades": "Fehlgeschlagen",
+ "Klar (behållen)": "Fertig (behalten)",
+ "hämtat…": "heruntergeladen…",
+ "Blockerad": "Blockiert",
+ "hot": "Bedrohung"
 }

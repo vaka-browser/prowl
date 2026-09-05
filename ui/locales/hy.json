@@ -670,5 +670,15 @@
  "Surfdata rensad – historiken sparas åt dina föräldrar.": "Զննարկման տվյալները մաքրված են. պատմությունը պահվում է ձեր ծնողների համար:",
  "Giltigt till": "Վավերական է",
  "Hantera kort": "Կառավարեք քարտերը",
- "Välj kort": "Ընտրեք քարտ"
+ "Välj kort": "Ընտրեք քարտ",
+ "Pausa": "Դադար",
+ "Fortsätt": "Շարունակեք",
+ "Pausad": "Դադարեցված է",
+ "Klar": "Կատարված է",
+ "Avbruten": "Չեղարկված է",
+ "Misslyckades": "Չհաջողվեց",
+ "Klar (behållen)": "Կատարված է (պահված է)",
+ "hämtat…": "բերված…",
+ "Blockerad": "Արգելափակված",
+ "hot": "սպառնալիք"
 }

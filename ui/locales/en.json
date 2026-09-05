@@ -707,5 +707,15 @@
  "Avsluta": "End",
  "En ny version finns": "A new version is available",
  "Klipp ut": "Cut out",
- "Nedladdade filer": "Downloaded files"
+ "Nedladdade filer": "Downloaded files",
+ "Pausa": "Pause",
+ "Fortsätt": "Resume",
+ "Pausad": "Paused",
+ "Klar": "Done",
+ "Avbruten": "Cancelled",
+ "Misslyckades": "Failed",
+ "Klar (behållen)": "Done (kept)",
+ "hämtat…": "downloaded…",
+ "Blockerad": "Blocked",
+ "hot": "threat"
 }

@@ -707,5 +707,15 @@
  "Avsluta": "Beigas",
  "En ny version finns": "Ir pieejama jauna versija",
  "Klipp ut": "Izgriezt",
- "Nedladdade filer": "Lejupielādētie faili"
+ "Nedladdade filer": "Lejupielādētie faili",
+ "Pausa": "Pauze",
+ "Fortsätt": "Turpināt",
+ "Pausad": "Pauzēts",
+ "Klar": "Gatavs",
+ "Avbruten": "Atcelts",
+ "Misslyckades": "Neizdevās",
+ "Klar (behållen)": "Gatavs (saglabāts)",
+ "hämtat…": "atnests…",
+ "Blockerad": "Bloķēts",
+ "hot": "draudi"
 }

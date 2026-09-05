@@ -707,5 +707,15 @@
  "Avsluta": "Крај",
  "En ny version finns": "Доступна је нова верзија",
  "Klipp ut": "Исеците",
- "Nedladdade filer": "Преузете датотеке"
+ "Nedladdade filer": "Преузете датотеке",
+ "Pausa": "Пауза",
+ "Fortsätt": "Настави",
+ "Pausad": "Паузирано",
+ "Klar": "Готово",
+ "Avbruten": "Отказано",
+ "Misslyckades": "Није успело",
+ "Klar (behållen)": "Готово (задржано)",
+ "hämtat…": "донет…",
+ "Blockerad": "Блокирано",
+ "hot": "претња"
 }

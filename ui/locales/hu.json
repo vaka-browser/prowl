@@ -707,5 +707,15 @@
  "Avsluta": "Vége",
  "En ny version finns": "Új verzió érhető el",
  "Klipp ut": "Vágja ki",
- "Nedladdade filer": "Letöltött fájlok"
+ "Nedladdade filer": "Letöltött fájlok",
+ "Pausa": "Szünet",
+ "Fortsätt": "Folytatás",
+ "Pausad": "Szüneteltetve",
+ "Klar": "Kész",
+ "Avbruten": "Törölve",
+ "Misslyckades": "Sikertelen",
+ "Klar (behållen)": "Kész (megőrizve)",
+ "hämtat…": "elhozva…",
+ "Blockerad": "Zárolt",
+ "hot": "fenyegetés"
 }

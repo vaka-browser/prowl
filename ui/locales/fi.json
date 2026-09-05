@@ -707,5 +707,15 @@
  "Avsluta": "Loppu",
  "En ny version finns": "Uusi versio on saatavilla",
  "Klipp ut": "Leikkaa pois",
- "Nedladdade filer": "Ladatut tiedostot"
+ "Nedladdade filer": "Ladatut tiedostot",
+ "Pausa": "Tauko",
+ "Fortsätt": "Jatkaa",
+ "Pausad": "Keskeytetty",
+ "Klar": "Tehty",
+ "Avbruten": "Peruutettu",
+ "Misslyckades": "Epäonnistui",
+ "Klar (behållen)": "Valmis (säilytetty)",
+ "hämtat…": "haettu…",
+ "Blockerad": "Estetty",
+ "hot": "uhka"
 }

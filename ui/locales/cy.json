@@ -670,5 +670,15 @@
  "Surfdata rensad – historiken sparas åt dina föräldrar.": "Clirio data pori - mae'r hanes yn cael ei gadw ar gyfer eich rhieni.",
  "Välj kort": "Dewiswch gerdyn",
  "Giltigt till": "Dilys i",
- "Hantera kort": "Rheoli cardiau"
+ "Hantera kort": "Rheoli cardiau",
+ "Pausa": "Oedwch",
+ "Fortsätt": "Parhau",
+ "Pausad": "Wedi seibio",
+ "Klar": "Wedi'i wneud",
+ "Avbruten": "Wedi'i ganslo",
+ "Misslyckades": "Wedi methu",
+ "Klar (behållen)": "Wedi'i wneud (Wedi'i gadw)",
+ "hämtat…": "nôl…",
+ "Blockerad": "Wedi'i rwystro",
+ "hot": "bygythiad"
 }

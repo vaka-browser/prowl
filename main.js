@@ -1172,7 +1172,13 @@ ipcMain.on('krypto:toggle', (e, open, mode, token) => {
       wc.on('will-navigate', (ev, url) => {
         if (url.startsWith('https://krypto.local/')) {
           ev.preventDefault();
-          if (url.includes('login')) sendTo(ctx, 'open-login');
+          if (url.includes('/checkout')) {          // egen kassa (Stripe Payment Element) i panelen
+            const plan = ((url.split('plan=')[1] || 'pro_month').replace(/[^a-z_]/g, '')) || 'pro_month';
+            ctx.kryptoView._mode = 'checkout';
+            ctx.kryptoView.webContents.loadFile(path.join(__dirname, 'ui', 'checkout.html'), { hash: plan }).catch(() => {});
+          }
+          else if (url.includes('/back')) { ctx.kryptoView._mode = null; loadKrypto(ctx, ctx.vakaToken ? 'nopro' : 'signedout'); }
+          else if (url.includes('login')) sendTo(ctx, 'open-login');
           else if (url.includes('recheck')) sendTo(ctx, 'krypto-recheck');
         } else if (!url.startsWith('file:')) {
           ev.preventDefault(); sendTo(ctx, 'open-new-tab', url);
@@ -1274,6 +1280,23 @@ ipcMain.handle('net:detail', async (e, id) => {
  * kontonumret aldrig behöver ligga i panelen. Samma /ai/chat som webbens assistent. */
 const KRYPTO_LOG = path.join(app.getPath('userData'), 'krypto-chat.log');
 function klog(o) { try { fs.appendFileSync(KRYPTO_LOG, new Date().toISOString() + ' ' + JSON.stringify(o) + '\n'); } catch {} }
+/* Egen kassa: panelen (ui/checkout.html) ber om en betalningsavsikt och bekräftar
+ * köpet via oss – token läggs på här, så sidan ser varken token eller nyckel. */
+async function vakaBillingCall(e, pathname, body) {
+  const ctx = e.sender.__ctx; const token = ctx && ctx.vakaToken;
+  if (!token) return { ok: false, error: 'no_session', needLogin: true };
+  try {
+    const r = await fetch(SKOLL + '/api/sakerkoll/vaka/billing/' + pathname, {
+      method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify(Object.assign({}, body || {}, { token })), signal: AbortSignal.timeout(30000),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok && !j.error) j.error = 'http_' + r.status;
+    return j;
+  } catch { return { ok: false, error: 'unreachable', message: 'Kunde inte nå servern. Kontrollera din uppkoppling.' }; }
+}
+ipcMain.handle('billing:intent', (e, plan) => vakaBillingCall(e, 'intent', { plan: String(plan || 'pro_month') }));
+ipcMain.handle('billing:confirm', (e, d) => vakaBillingCall(e, 'confirm', { subscription: d && d.subscription, payment_intent: d && d.payment_intent }));
 ipcMain.handle('krypto:chat', async (e, messages) => {
   const ctx = e.sender.__ctx;
   const token = ctx && ctx.vakaToken;

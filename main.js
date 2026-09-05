@@ -974,6 +974,9 @@ ipcMain.on('i18n:load', (e, lang) => {
   } catch { e.returnValue = {}; }
 });
 // Skalet färgar om fönsterknapparna (Windows/Linux-overlay) när tema/inkognito byts.
+ipcMain.on('win:minimize', (e) => { try { BrowserWindow.fromWebContents(e.sender).minimize(); } catch {} });
+ipcMain.on('win:toggle-max', (e) => { try { const w = BrowserWindow.fromWebContents(e.sender); if (w.isMaximized()) w.unmaximize(); else w.maximize(); } catch {} });
+ipcMain.on('win:close', (e) => { try { BrowserWindow.fromWebContents(e.sender).close(); } catch {} });   // samma väg som systemets kryss (stäng-bekräftelsen sköts som förut)
 ipcMain.on('win:titlebar', (e, c) => {
   try { const w = BrowserWindow.fromWebContents(e.sender); if (w && w.setTitleBarOverlay && c) w.setTitleBarOverlay({ color: String(c.color || '#e7edf4'), symbolColor: String(c.symbolColor || '#0e2a47'), height: 44 }); } catch {}
 });
@@ -1293,10 +1296,12 @@ function createWindow(incognito) {
     backgroundColor: incognito ? '#0a0512' : '#0e2a47',
     title: incognito ? 'Prowl – Inkognito' : 'Prowl',
     // Som Brave/Chrome: ingen egen titelrad – flikarna ligger i samma rad som fönsterknapparna.
-    titleBarStyle: 'hidden',
+    // Som Brave/Chrome: ingen systemtitelrad. Mac: trafikljusen ritas av systemet uppe till
+    // vänster. Windows/Linux: ramlöst fönster – skalet ritar minimera/maximera/stäng själv
+    // längst till höger i flikraden (#winctl) och pratar med oss via win:minimize/toggle-max/close.
     ...(process.platform === 'darwin'
-      ? { trafficLightPosition: { x: 14, y: 14 } }
-      : { titleBarOverlay: { color: incognito ? '#0b0618' : '#e7edf4', symbolColor: incognito ? '#cbbde6' : '#0e2a47', height: 44 } }),
+      ? { titleBarStyle: 'hidden', trafficLightPosition: { x: 14, y: 14 } }
+      : { frame: false }),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false },
   });
   const id = win.webContents.id;
@@ -1304,6 +1309,8 @@ function createWindow(incognito) {
   wins.set(id, ctx);
   win.loadFile(path.join(__dirname, 'ui', 'shell.html'), incognito ? { query: { incognito: '1' } } : {});
   win.on('resize', () => sendTo(ctx, 'window-resized'));
+  win.on('maximize', () => sendTo(ctx, 'win-maximized', true));
+  win.on('unmaximize', () => sendTo(ctx, 'win-maximized', false));
   win.on('enter-full-screen', () => applyBounds(ctx));   // räkna om vy-bounds när övergången är klar
   win.on('blur', () => { ctx._blurAt = Date.now(); });
   // Electron på Wayland ritar fönsterram och skugga själv (CSD). När fönstret

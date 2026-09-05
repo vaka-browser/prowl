@@ -6,7 +6,7 @@ const { EXTRACT_JS, analyzeContent, checkUrl } = require('./scanner');
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const urls = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-const outPath = process.argv[3] || '/home/mint/scan-report.json';
+const outPath = process.argv[3] || './scan-report.json';
 
 app.whenReady().then(async () => {
   const win = new BrowserWindow({ show: false, width: 1200, height: 800 });

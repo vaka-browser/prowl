@@ -1,6 +1,6 @@
 {
   "name": "prowl",
-  "version": "0.3.52",
+  "version": "0.3.53",
   "description": "Prowl – hackerutgåvan av den svenska webbläsaren",
   "main": "main.js",
   "scripts": {
@@ -10,7 +10,7 @@
     "build:win": "electron-builder --win --x64"
   },
   "author": "Cetto",
-  "license": "UNLICENSED",
+  "license": "MPL-2.0",
   "dependencies": {
     "cross-fetch": "^4.1.0",
     "electron-updater": "^6.8.9",
@@ -79,5 +79,13 @@
     "asarUnpack": [
       "native/**"
     ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vaka-browser/prowl.git"
+  },
+  "homepage": "https://vaka-web-lovat.vercel.app",
+  "bugs": {
+    "url": "https://github.com/vaka-browser/prowl/issues"
   }
 }

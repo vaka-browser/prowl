@@ -14,7 +14,15 @@ contextBridge.exposeInMainWorld('skoll', {
   onAdblockHit: (cb) => ipcRenderer.on('adblock:hit', (_e, type) => cb(type)),
 });
 
+contextBridge.exposeInMainWorld('defaultBrowser', {
+  state: () => ipcRenderer.invoke('defaultbrowser:state'),
+  set: () => ipcRenderer.invoke('defaultbrowser:set'),
+});
+
 contextBridge.exposeInMainWorld('auth', {
+  remember: (account) => ipcRenderer.invoke('auth:remember', account),
+  recall: () => ipcRenderer.invoke('auth:recall'),
+  forget: () => ipcRenderer.invoke('auth:forget'),
   login: (email, password) => ipcRenderer.invoke('auth:login', { email, password }),
   signup: (email, password, name) => ipcRenderer.invoke('auth:signup', { email, password, name }),
   verifyCode: (email, code) => ipcRenderer.invoke('auth:verify-code', { email, code }),

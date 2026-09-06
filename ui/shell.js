@@ -109,7 +109,7 @@ const OPEN_TABS_KEY = 'skoll-open-tabs';
 function saveOpenTabs() {
   if (windowIncognito) return;                                  // inkognito sparas aldrig
   try {
-    const urls = tabs.filter((t) => !t.incognito && t.url).map((t) => t.url);
+    const urls = tabs.filter((t) => !t.incognito && !t._closing && t.url).map((t) => t.url);
     localStorage.setItem(OPEN_TABS_KEY, JSON.stringify(urls));
   } catch {}
 }
@@ -153,11 +153,21 @@ function switchTab(tab) {
   renderTabs(); updateNavButtons(); updateStar();
 }
 function closeTab(tab) {
+  if (!tab || tab._closing) return;
+  if (tabs.indexOf(tab) < 0) return;
+  const el = $('tabs').querySelector('[data-tabid="' + tab.id + '"]');
+  if (!el) { finalizeClose(tab); return; }   // ingen DOM-flik → stäng direkt
+  tab._closing = true;
+  el.classList.remove('entering');
+  el.classList.add('closing');               // mjuk utgång (krymper + tonar bort)
+  setTimeout(() => finalizeClose(tab), 165);
+}
+function finalizeClose(tab) {
   const i = tabs.indexOf(tab); if (i < 0) return;
   window.view.destroy(tab.id);
   tabs.splice(i, 1);
   saveOpenTabs();
-  if (!tabs.length) { createTab(null); return; }
+  if (!tabs.length) { window.view.doClose(); return; }   // sista fliken stängd → stäng browsern
   if (active === tab) switchTab(tabs[Math.max(0, i - 1)]); else renderTabs();
 }
 // Somliga sajter (t.ex. GitHub) skickar en VIT mörklägeslogga som blir osynlig på den ljusa flik-raden.
@@ -182,8 +192,10 @@ function detectFavLight(url) {
   img.onerror = () => { favLight[url] = false; };
   img.src = url;
 }
-function favIconHtml(tab) {
-  // Sidans egen favicon → tvinga fram sajtens /favicon.ico → ren jordglob om inget finns.
+function favHtml(tab) {
+  if (tab.incognito) return '<span class="fav"><svg class="ic" style="width:15px;height:15px"><use href="#i-incognito" /></svg></span>';
+  if (tab.isSettings) return '<span class="fav"><svg class="ic" style="width:15px;height:15px"><use href="#i-settings" /></svg></span>';
+  if (!tab.url) return '<span class="fav"><svg class="ic" style="width:15px;height:15px"><use href="#i-shield" /></svg></span>';
   let origin = ''; try { origin = new URL(tab.url).origin; } catch {}
   const real = origin ? origin + '/favicon.ico' : '';
   const src = tab.favicon || real;
@@ -200,11 +212,9 @@ function renderTabs() {
     if (tab.favicon) detectFavLight(tab.favicon);
     const el = document.createElement('div');
     el.className = 'tab' + (tab === active ? ' active' : '') + (tab.entering ? ' entering' : '') + (tab.incognito ? ' incognito' : '');
-    const fav = tab.incognito
-      ? `<span class="fav"><svg class="ic" style="width:15px;height:15px"><use href="#i-incognito" /></svg></span>`
-      : (!tab.url
-        ? `<span class="fav"><svg class="ic" style="width:15px;height:15px"><use href="#i-shield" /></svg></span>`
-        : favIconHtml(tab));
+    el.dataset.tabid = tab.id;
+    if (tab._closing) el.classList.add('closing');
+    const fav = favHtml(tab);
     el.innerHTML = `${fav}<span class="ttl">${escapeHtml(tab.title || 'Ny flik')}</span><button class="tclose"><svg class="ic" style="width:13px;height:13px"><use href="#i-close" /></svg></button>`;
     el.addEventListener('click', (e) => {
       if (e.target.closest('.tclose')) { e.stopPropagation(); closeTab(tab); } else switchTab(tab);
@@ -390,7 +400,19 @@ function setShield(status) {
 /* autocomplete kopplas längre ner (attachAutocomplete) */
 $('back').addEventListener('click', () => { if (active) window.view.back(active.id); });
 $('forward').addEventListener('click', () => { if (active) window.view.forward(active.id); });
-$('reload').addEventListener('click', () => { if (active) ($('reload').textContent === '✕' ? window.view.stop(active.id) : window.view.reload(active.id)); });
+function doReload() {
+  // Är någon overlay öppen (inställningar/login/bokmärken...) eller står vi på startsidan (ingen webb-URL)?
+  const anyOverlay = OVERLAY_IDS.some((id) => { const el = $(id); return el && !el.classList.contains('hidden'); });
+  const onWebPage = active && active.url && !anyOverlay;
+  if (onWebPage) {
+    if ($('reload').textContent === '\u2715') window.view.stop(active.id); else window.view.reload(active.id);
+    return;
+  }
+  // Startsida eller inställningar → ladda om HELA skalet så allt (barn, konto, startsida) läses in på nytt.
+  try { location.reload(); } catch {}
+}
+$('reload').addEventListener('click', doReload);
+window.addEventListener('keydown', (e) => { if (e.key === 'F5' || ((e.ctrlKey || e.metaKey) && (e.key === 'r' || e.key === 'R'))) { e.preventDefault(); doReload(); } });
 $('newtab-btn').addEventListener('click', () => createTab(null));
 function updateNavButtons() {
   $('back').disabled = !(active && active.canBack);
@@ -439,9 +461,15 @@ async function refreshPro() {
   if (!account || !account.token) return;
   try {
     const r = await window.auth.session(account.token);
-    if (r && r.ok) { account.pro = !!r.pro; if (r.name) account.name = r.name; localStorage.setItem('skoll-account', JSON.stringify(account)); }
-    // Logga ALDRIG ut automatiskt: en stängd browser ska förbli inloggad om man var inloggad.
-    // "no_session" kan vara en tillfällig serverhicka — behåll kontot lokalt tills användaren själv loggar ut.
+    if (r && r.ok) { account.pro = !!r.pro; if (r.name) account.name = r.name; localStorage.setItem('skoll-account', JSON.stringify(account)); try { window.auth.remember(account); } catch {} }
+    // Ett NÄTVERKSFEL (unreachable) kan vara en tillfällig hicka → behåll kontot tyst, logga ALDRIG ut på det.
+    // Men om servern UTTRYCKLIGEN svarar no_session är token död på riktigt → be om ny inloggning EN gång
+    // (behåll lokal data/inställningar). Annars fastnar man som "inloggad" med en token som inte duger.
+    else if (r && r.error === 'no_session' && !account.isChild && !window.__reauthPrompted) {
+      window.__reauthPrompted = true;
+      showToast('Din inloggning har gått ut — logga in igen.');
+      try { openLogin(); } catch {}
+    }
   } catch {}
   if (pendingKryptoAfterLogin) { pendingKryptoAfterLogin = false; openKrypto(true); return; }
   if (kryptoOpen) openKrypto(true); // ladda om panelen med rätt läge
@@ -468,7 +496,16 @@ async function setAdblock(on) {
   $('adblock').classList.toggle('off', !on);
   $('tgl-adblock').checked = on;
 }
+let settingsTab = null;
 function openSettings() {
+  // Inställningar som EGEN flik (kugghjuls-favicon + titel "Inställningar")
+  if (!settingsTab || tabs.indexOf(settingsTab) < 0) {
+    settingsTab = createTab(null);
+    settingsTab.isSettings = true;
+    settingsTab.title = 'Inställningar';
+  } else if (active !== settingsTab) {
+    switchTab(settingsTab);
+  }
   window.view.hide(); hideInfobar();
   $('tgl-protection').checked = protectionOn;
   $('tgl-adblock').checked = !$('adblock').classList.contains('off');
@@ -476,16 +513,17 @@ function openSettings() {
   $('seg-freq').classList.toggle('on', topSitesMode === 'frequent');
   $('tgl-krypto').checked = $('krypto-btn').style.display !== 'none';
   $('tgl-motion').checked = reduceMotion;
-  renderEngines(); renderLangs(); applyZoomSeg();
+  renderEngines(); renderLangs(); applyZoomSeg(); refreshDefaultBrowser();
   showSettingsCat(account ? 'konto' : 'utseende');
   hideOverlayElements();
-  if (active) active.overlay = 'settings';
+  settingsTab.overlay = 'settings';
   renderSetHero();
   const sv = $('settings');
   sv.classList.remove('hidden');
   // Öppningsanimationen körs om från början varje gång.
   sv.classList.remove('opening'); void sv.offsetWidth; sv.classList.add('opening');
   clearTimeout(sv._openT); sv._openT = setTimeout(() => sv.classList.remove('opening'), 1400);
+  renderTabs();
 }
 /* Profilhuvudet överst i inställningarna: bild, namn, mejl och plan. */
 function renderSetHero() {
@@ -507,9 +545,17 @@ function renderSetHero() {
   side.innerHTML = (account.pro ? '<span class="set-chip">' + escapeHtml(pro) + '</span>' : '<span class="set-chip dim">Gratis</span>');
 }
 function closeSettings() {
-  if (active) active.overlay = null;
+  if (typeof stopChatPoll === 'function') stopChatPoll();
   $('settings').classList.add('hidden');
-  showActiveTab();
+  const st = settingsTab;
+  if (st && tabs.indexOf(st) >= 0) {
+    settingsTab = null; st.overlay = null;
+    if (tabs.length > 1) closeTab(st);                                   // stäng inställnings-fliken → växla till granne
+    else { st.isSettings = false; st.title = 'Ny flik'; switchTab(st); } // enda fliken → gör om till hemflik (stäng ej browsern)
+  } else {
+    if (active) active.overlay = null;
+    showActiveTab();
+  }
 }
 function showSettingsCat(cat) {
   document.querySelectorAll('#settings-nav .set-tab').forEach((b) => b.classList.toggle('on', b.dataset.cat === cat));
@@ -653,6 +699,58 @@ let pendingSubmit = null;  // { type:'login'|'signup', email, password, name } f
 let pendingResetEmail = null;  // glömt-lösenord-flödet
 const EMAIL_RE = /^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$/;
 // Familj + Vänner/chatt kräver inloggning: dölj flikarna helt när man är utloggad.
+/* Standardwebbläsare: visa läget och låt användaren sätta Prowl som standard. */
+async function refreshDefaultBrowser() {
+  try {
+    const st = await window.defaultBrowser.state();
+    const btn = $('defbrowser-btn'), desc = $('defbrowser-desc');
+    if (st && st.default) {
+      btn.textContent = 'Standard ✓'; btn.disabled = true; btn.style.opacity = '.55';
+      desc.textContent = 'Prowl är din standardwebbläsare — länkar öppnas här.';
+    } else {
+      btn.textContent = 'Sätt som standard'; btn.disabled = false; btn.style.opacity = '';
+      desc.textContent = 'Öppna länkar från andra program i Prowl.';
+    }
+  } catch {}
+}
+$('defbrowser-btn').addEventListener('click', async () => {
+  const r = await window.defaultBrowser.set();
+  if (r && r.ok) showToast('Prowl är nu din standardwebbläsare 🎉');
+  else if (r && r.manual) showToast('Välj Prowl i systeminställningarna som öppnades.');
+  else showToast('Kunde inte sätta Prowl som standard.');
+  refreshDefaultBrowser();
+});
+// Nudge: om Prowl inte är standardwebbläsare, visa en banner (som uppdateringsnotisen).
+async function maybeShowDefaultBanner() {
+  try {
+    if (windowIncognito) return;
+    const st = await window.defaultBrowser.state();
+    if (st && st.default) return;                                   // redan standard → visa inte
+    const snooze = parseInt(localStorage.getItem('skoll-defbrowser-snooze') || '0', 10);
+    if (Date.now() < snooze) return;                                // nyligen "Senare"
+    showDefaultBrowserBanner();
+  } catch {}
+}
+function showDefaultBrowserBanner() {
+  if (document.getElementById('defbrowser-banner')) return;
+  const bar = document.createElement('div'); bar.id = 'defbrowser-banner';
+  bar.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:300;display:flex;align-items:center;gap:12px;background:var(--color-navy-900);color:#fff;padding:11px 14px 11px 18px;border-radius:14px;box-shadow:0 14px 40px rgba(8,20,35,.45);font-size:13.5px;max-width:92vw;';
+  bar.innerHTML = '<span>🛡️ <b>Prowl</b> är inte din huvudwebbläsare än.</span>'
+    + '<button id="db-set" style="background:#fff;color:var(--color-navy-900);border:0;border-radius:9px;padding:8px 14px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;">Gör Prowl till min main</button>'
+    + '<button id="db-later" style="background:none;border:0;color:rgba(255,255,255,.7);font-size:13px;cursor:pointer;">Senare</button>';
+  document.body.appendChild(bar);
+  bar.querySelector('#db-set').addEventListener('click', async () => {
+    const b = bar.querySelector('#db-set'); b.textContent = 'Sätter…'; b.disabled = true;
+    let r; try { r = await window.defaultBrowser.set(); } catch { r = null; }
+    if (r && r.ok) { showToast('Prowl är nu din huvudwebbläsare 🎉'); bar.remove(); }
+    else if (r && r.manual) { showToast('Välj Prowl i systeminställningarna som öppnades.'); bar.remove(); }
+    else { b.textContent = 'Gör Prowl till min main'; b.disabled = false; showToast('Kunde inte sätta Prowl som standard.'); }
+  });
+  bar.querySelector('#db-later').addEventListener('click', () => {
+    try { localStorage.setItem('skoll-defbrowser-snooze', String(Date.now() + 7 * 24 * 3600 * 1000)); } catch {}
+    bar.remove();
+  });
+}
 function applyAuthGates() {
   const gated = ['vanner'];
   gated.forEach((c) => { const t = document.querySelector('#settings-nav .set-tab[data-cat="' + c + '"]'); if (t) t.style.display = account ? '' : 'none'; });
@@ -705,6 +803,7 @@ function loginAs(token, email, pro, name) {
   socMe = null;   // förra kontots profil (bild m.m.) får inte hänga kvar
   unlockHistoryForParent();   // vuxenkonto → historiken går att rensa igen
   localStorage.setItem('skoll-account', JSON.stringify(account));
+  try { window.auth.remember(account); } catch {}
   updateAccountBtn();
   try { loadSocMe().then(() => updateAccountBtn()); } catch {}   // hämta NYA kontots profilbild → kontoknappen
   try { window.session.login(accountKey(account)); } catch {}   // återställ kontots webbsession + lås upp lösenord
@@ -715,6 +814,7 @@ function doLogout(reopenKrypto) {
   const t = account && account.token;
   const sk = account ? accountKey(account) : null;
   account = null; socMe = null; localStorage.removeItem('skoll-account'); updateAccountBtn();
+  try { window.auth.forget(); } catch {}
   if (sk) { try { window.session.logout(sk); } catch {} }   // spara + rensa webbsession (utloggad ur Gmail m.fl.) + lås lösenord
   if (t) { try { window.auth.logout(t); } catch {} }
   setLoginView('login');
@@ -1167,6 +1267,14 @@ window.view.onMenuZoom((dir) => { if (active && active.url) window.view.zoom(act
 window.view.onMenuPrint(() => { if (active && active.url) window.view.print(active.id); });
 window.view.onCloseTab(() => { if (active) closeTab(active); });
 window.view.onFocusAddress(() => { addressInput.focus(); addressInput.select(); });
+// Klick/fokus i adressfältet → visa HELA URL:en (https://…), markerad så den är lätt att ändra.
+addressInput.addEventListener('focus', () => {
+  if (active && active.url) { addressInput.value = active.url; setTimeout(() => { try { addressInput.select(); } catch {} }, 0); }
+});
+// Lämnar man fältet utan att navigera → tillbaka till den snygga versionen (utan https://).
+addressInput.addEventListener('blur', () => {
+  if (active) addressInput.value = active.url ? pretty(active.url) : '';
+});
 window.view.onClearData(() => { const kept = !clearHistory(); if (typeof historyOpen !== 'undefined' && historyOpen) renderHistory(); showToast(kept ? 'Surfdata rensad – historiken sparas åt dina föräldrar.' : 'Surfdata rensad.'); });
 
 /* ── Historik ── */
@@ -1259,8 +1367,45 @@ $('bm-star').addEventListener('click', () => {
   let l = getBookmarks();
   if (isBookmarked(active.url)) l = l.filter((b) => b.url !== active.url);
   else l.unshift({ url: active.url, title: active.title || active.url, favicon: active.favicon || null });
-  saveBookmarks(l); updateStar();
+  saveBookmarks(l); updateStar(); renderBookmarkBar();
 });
+function bmShort(e) {
+  let t = e.title || '';
+  try { if (!t || t === e.url) t = new URL(e.url).hostname.replace(/^www\./, ''); } catch {}
+  return t.length > 22 ? t.slice(0, 21) + '…' : t;
+}
+// Bokmärkesfältet: sparade sidor som klickbara chips under adressfältet (à la Brave).
+function renderBookmarkBar() {
+  const bar = $('bmbar'); if (!bar) return;
+  const list = getBookmarks();
+  if (!list.length) { bar.style.display = 'none'; bar.innerHTML = ''; sendBounds(); return; }
+  bar.style.display = 'flex';
+  bar.innerHTML = list.map((e) => {
+    const fav = e.favicon
+      ? '<img src="' + escapeHtml(e.favicon) + '" style="width:15px;height:15px;border-radius:3px;flex:none" onerror="this.style.display=\'none\'">'
+      : '<span style="font-size:12px;flex:none">🔖</span>';
+    return '<div class="bmchip" data-url="' + escapeHtml(e.url) + '" title="' + escapeHtml(e.title || e.url) + '" '
+      + 'style="display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 5px 0 9px;border-radius:7px;cursor:pointer;color:var(--color-navy-900);font-size:12.5px;font-weight:600;max-width:190px;flex:none;">'
+      + fav + '<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(bmShort(e)) + '</span>'
+      + '<span class="bmx" style="opacity:.35;font-size:15px;line-height:1;padding:0 2px;border-radius:4px">×</span></div>';
+  }).join('');
+  bar.querySelectorAll('.bmchip').forEach((c) => {
+    const url = c.dataset.url;
+    c.addEventListener('mouseenter', () => { c.style.background = 'rgba(28,43,58,.07)'; });
+    c.addEventListener('mouseleave', () => { c.style.background = 'transparent'; });
+    c.addEventListener('click', (ev) => {
+      if (ev.target && ev.target.classList && ev.target.classList.contains('bmx')) {
+        ev.stopPropagation();
+        saveBookmarks(getBookmarks().filter((b) => b.url !== url)); renderBookmarkBar(); updateStar(); return;
+      }
+      try { if (typeof closeSettings === 'function' && !$('settings').classList.contains('hidden')) closeSettings(); } catch {}
+      try { if (typeof closeBookmarks === 'function' && !$('bookmarks').classList.contains('hidden')) closeBookmarks(); } catch {}
+      if (active) guardedNavigate(active, url); else { const t = createTab(url); switchTab(t); }
+    });
+    c.addEventListener('auxclick', (ev) => { if (ev.button === 1) { ev.preventDefault(); createTab(url); } });  // mittenklick = ny flik
+  });
+  sendBounds();   // fältet ändrar höjd → flytta native-webbvyn så den inte täcker fältet
+}
 function rowFav(favicon) {
   return favicon ? `<img class="hist-fav" src="${favicon}">` : `<span class="hist-fav" style="display:grid;place-items:center;color:#8ba3bf"><svg class="ic" style="width:13px;height:13px"><use href="#i-globe" /></svg></span>`;
 }
@@ -1273,7 +1418,7 @@ function openBookmarks() {
     const row = document.createElement('div'); row.className = 'hist-row';
     row.innerHTML = `${rowFav(e.favicon)}<div class="hist-txt"><div class="hist-title">${escapeHtml(e.title)}</div><div class="hist-url">${escapeHtml(e.url.replace(/^https?:\/\/(www\.)?/, ''))}</div></div><button class="row-btn" title="Ta bort"><svg class="ic ic-sm"><use href="#i-trash" /></svg></button>`;
     row.addEventListener('click', () => { closeBookmarks(); if (active) guardedNavigate(active, e.url); });
-    row.querySelector('.row-btn').addEventListener('click', (ev) => { ev.stopPropagation(); saveBookmarks(getBookmarks().filter((x) => x.url !== e.url)); openBookmarks(); updateStar(); });
+    row.querySelector('.row-btn').addEventListener('click', (ev) => { ev.stopPropagation(); saveBookmarks(getBookmarks().filter((x) => x.url !== e.url)); openBookmarks(); updateStar(); renderBookmarkBar(); });
     list.appendChild(row);
   });
   hideOverlayElements();
@@ -1812,6 +1957,8 @@ greet(); setInterval(greet, 60000); // uppdatera hälsningen om timmen rullar ö
 applyStoredBg(); applyTopSitesMode(); initAdblock();
 sendBounds();
 restoreTabs();
+renderBookmarkBar();
+setTimeout(maybeShowDefaultBanner, 2500);
 setTimeout(sendBounds, 300);
 
 /* ── Hacker-intro (enkel välkomst, första gången) ── */
@@ -2180,4 +2327,20 @@ window.net.onRow((r) => { netRows.set(r.id, r); if (netOpen) scheduleNetRender()
 // ── Session-återställning vid uppstart — körs SIST så all state är deklarerad ──
 // Rensa ALDRIG webbsessionen vid start: cookies (Google-inlogg m.m.) ska överleva att man stänger browsern.
 if (account && account.token) { try { window.session.setkey(accountKey(account)); } catch {} refreshPro(); try { loadSocMe().then(() => updateAccountBtn()); } catch {} }   // hämta profilbild → visa i kontoknappen
-else { try { window.session.setkey(null); } catch {} }
+// Föll inloggningen bort ur localStorage men finns krypterad i nyckelringen? Återställ (efter servervalidering).
+if (!account || !account.token) {
+  try { window.session.setkey(null); } catch {}
+  (async () => {
+    let r; try { r = await window.auth.recall(); } catch { return; }
+    if (!r || !r.ok || !r.account || !r.account.token) return;
+    const acc = r.account; let ok = false;
+    try { const s = await window.auth.session(acc.token); ok = !!(s && s.ok); } catch { ok = true; }   // nätverkshicka: behåll ändå
+    if (!ok) return;
+    account = acc;
+    try { localStorage.setItem('skoll-account', JSON.stringify(account)); } catch {}
+    try { updateAccountBtn(); } catch {}
+    try { window.session.setkey(accountKey(account)); } catch {}
+    try { loadSocMe().then(() => updateAccountBtn()); } catch {}   // hämta profilbild → visa i kontoknappen
+    refreshPro();
+  })();
+}

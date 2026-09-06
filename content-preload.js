@@ -14,6 +14,38 @@ const { ipcRenderer } = require('electron');
   window.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') report(linkOf(document.activeElement)); }, true);
 })();
 
+/* Få Prowl att se ut EXAKT som riktiga Google Chrome för sajternas JavaScript
+ * (t.ex. Googles inloggnings-BotGuard). Electron läcker skillnader mot Chrome:
+ *   - window.chrome saknar loadTimes/csi/app  → vi lägger till dem
+ *   - navigator.languages är duplicerat        → vi normaliserar
+ *   - navigator.userAgentData sa "Chromium"    → vi säger även "Google Chrome"
+ * Körs i sidans MAIN-world vid document-start via contextBridge.executeInMainWorld
+ * (deterministiskt, inget DOM-injektions-race). */
+try {
+  const { contextBridge } = require('electron');
+  contextBridge.executeInMainWorld({
+    func: () => {
+      try {
+        if (window.chrome) {
+          if (!window.chrome.loadTimes) window.chrome.loadTimes = function () { var t = (window.performance && performance.timing) || {}; var base = (t.navigationStart || Date.now()) / 1000; return { requestTime: base, startLoadTime: base, commitLoadTime: base + 0.05, finishDocumentLoadTime: base + 0.1, finishLoadTime: base + 0.15, firstPaintTime: base + 0.12, firstPaintAfterLoadTime: 0, navigationType: 'Other', wasFetchedViaSpdy: true, wasNpnNegotiated: true, npnNegotiatedProtocol: 'h2', wasAlternateProtocolAvailable: false, connectionInfo: 'h2' }; };
+          if (!window.chrome.csi) window.chrome.csi = function () { var t = (window.performance && performance.timing) || {}; return { startE: Date.now(), onloadT: t.domContentLoadedEventEnd || Date.now(), pageT: (window.performance && performance.now()) || 0, tran: 15 }; };
+          if (!window.chrome.app) window.chrome.app = { isInstalled: false, InstallState: { DISABLED: 'disabled', INSTALLED: 'installed', NOT_INSTALLED: 'not_installed' }, RunningState: { CANNOT_RUN: 'cannot_run', READY_TO_RUN: 'ready_to_run', RUNNING: 'running' }, getDetails: function () { return null; }, getIsInstalled: function () { return false; }, installState: function (cb) { if (typeof cb === 'function') setTimeout(function () { cb('not_installed'); }, 0); }, runningState: function () { return 'cannot_run'; } };
+        }
+        try { var langs = ['sv-SE', 'sv', 'en-US', 'en']; Object.defineProperty(Navigator.prototype, 'languages', { get: function () { return langs.slice(); }, configurable: true }); } catch (e) {}
+        try {
+          var ua = navigator.userAgent, v = (ua.match(/Chrome\/(\d+)/) || [])[1] || '150', fv = (ua.match(/Chrome\/([\d.]+)/) || [])[1] || v + '.0.0.0';
+          var brands = [{ brand: 'Not;A=Brand', version: '8' }, { brand: 'Chromium', version: v }, { brand: 'Google Chrome', version: v }];
+          var fvl = [{ brand: 'Not;A=Brand', version: '8.0.0.0' }, { brand: 'Chromium', version: fv }, { brand: 'Google Chrome', version: fv }];
+          var plat = (navigator.userAgentData && navigator.userAgentData.platform) || 'Windows';
+          var o = { brands: brands, mobile: false, platform: plat, getHighEntropyValues: function () { return Promise.resolve({ architecture: 'x86', bitness: '64', brands: brands, fullVersionList: fvl, mobile: false, model: '', platform: plat, platformVersion: '', uaFullVersion: fv, wow64: false }); }, toJSON: function () { return { brands: brands, mobile: false, platform: plat }; } };
+          Object.defineProperty(Navigator.prototype, 'userAgentData', { get: function () { return o; }, configurable: true });
+        } catch (e) {}
+      } catch (e) {}
+    }
+  });
+} catch (e) {}
+
+
 function findFields() {
   const pw = document.querySelector('input[type=password]');
   if (!pw) return null;

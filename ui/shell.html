@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self';" />
   <title>Prowl</title>
+<style>#bm-star{color:var(--color-navy-900);opacity:.55;transition:all .15s;cursor:pointer}#bm-star:hover{opacity:1;background:rgba(28,43,58,.09)}#bm-star.on{opacity:1;color:var(--color-terra,#d9663f)}#bm-star.on svg{fill:currentColor}</style>
   <link rel="stylesheet" href="tailwind.css" />
 <style>
 @keyframes dlpulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
@@ -57,6 +58,7 @@
     <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol>
     <symbol id="i-history" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1L3 8"/><path d="M3 3.5V8h4.5"/><path d="M12 8v4.5l3 1.8"/></symbol>
     <symbol id="i-incognito" viewBox="0 0 24 24"><path d="M6 10.5l1.4-4.2a2 2 0 0 1 1.9-1.3h5.4a2 2 0 0 1 1.9 1.3L18 10.5"/><path d="M3 11h18"/><circle cx="7.5" cy="15" r="2.5"/><circle cx="16.5" cy="15" r="2.5"/><path d="M10 15c.6-.7 3.4-.7 4 0"/></symbol>
+    <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></symbol>
     <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></symbol>
     <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v10M8 10l4 4 4-4"/><path d="M5 19h14"/></symbol>
     <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M16.5 6.5l2 2M13.5 9.5l2 2"/></symbol>
@@ -93,7 +95,7 @@
       <span id="shield" class="shield-wrap shield-home"><svg class="ic ic-sm"><use href="#i-shield" /></svg></span>
       <input id="address" type="text" spellcheck="false" placeholder="Sök tryggt eller skriv en adress"
              class="flex-1 bg-transparent outline-none text-[14px] text-navy-900 placeholder:text-navy-900/40" />
-      <button id="bm-star" class="grid place-items-center w-6 h-6 rounded-md flex-none" style="color:var(--color-navy-600);" title="Spara bokmärke"><svg class="ic ic-sm"><use href="#i-star" /></svg></button>
+      <button id="bm-star" class="grid place-items-center w-7 h-7 rounded-lg flex-none" title="Spara sida i bokmärkesfältet"><svg class="ic" style="width:18px;height:18px"><use href="#i-bookmark" /></svg></button>
       <span id="search-engine" class="text-[11px] font-semibold text-navy-900/35 select-none">Google</span>
     </div>
     <div id="omni-suggest"></div>
@@ -112,6 +114,9 @@
     <button id="account-btn" class="icon-btn relative" title="Konto"><svg class="ic"><use href="#i-user" /></svg></button>
     <button id="menu-btn" class="icon-btn" title="Meny"><svg class="ic"><use href="#i-menu" /></svg></button>
   </div>
+
+  <!-- Bokmärkesfält (favoriter som chips, syns när man sparat minst en) -->
+  <div id="bmbar" style="display:none;align-items:center;gap:3px;padding:5px 10px;overflow-x:auto;overflow-y:hidden;white-space:nowrap;background:var(--color-chrome,#eef2f6);border-top:1px solid var(--color-line);"></div>
 
   <!-- Webbinnehåll -->
   <div id="views" class="relative flex-1 bg-white">
@@ -940,6 +945,11 @@
               <div><div class="text-[15px] font-extrabold text-navy-900">Prowl</div><div class="text-[12.5px]" style="color:rgb(28 43 58 / .5);">Version 0.1.0 · byggd på Chromium (Electron)</div></div>
             </div>
             <p class="set-lead mt-4" style="max-width:400px;">En trygg svensk webbläsare med inbyggt bluffskydd, annonsblockerare och privat läge.</p>
+            <div class="set-row mt-4">
+              <span class="set-ico" style="color:var(--color-navy-700);"><svg class="ic ic-sm"><use href="#i-globe" /></svg></span>
+              <div class="set-txt"><div class="set-title">Standardwebbläsare</div><div class="set-desc" id="defbrowser-desc">Öppna länkar från andra program i Prowl.</div></div>
+              <button id="defbrowser-btn" class="pill flex-none" style="height:34px;">Sätt som standard</button>
+            </div>
             <button id="settings-reset" class="btn btn-risk mt-5" style="height:42px;">Återställ inställningarna</button>
           </div>
           </div>

@@ -92,6 +92,8 @@ svg { display: block; }
     from { max-width: 0; opacity: 0; padding-left: 0; padding-right: 0; transform: translateY(3px); }
     to   { max-width: 200px; opacity: 1; transform: none; }
   }
+  .tab.closing { animation: tabOut .17s cubic-bezier(.4,0,.9,.6) both; overflow: hidden; pointer-events: none; }
+  @keyframes tabOut { from { max-width: 200px; opacity: 1; } to { max-width: 0; opacity: 0; padding-left: 0; padding-right: 0; transform: translateY(2px); } }
   .tab.incognito .fav { color: #a87ee0; }
   .tab.incognito.active { background: #241442; color: #fff; box-shadow: 0 1px 4px rgb(0 0 0 / .3); }
   .tab.incognito.active .fav, .tab.incognito.active .tclose { color: #fff; }

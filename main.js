@@ -13,7 +13,7 @@ app.setName('Prowl');  // egen datamapp, skild från Vaka
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
-const { spawn } = require('child_process');
+const { spawn, execFile } = require('child_process');
 const QRCode = require('qrcode');
 
 const { SKOLL, EXTRACT_JS, analyzeContent, verdictFromReport, checkUrl } = require('./scanner');
@@ -193,7 +193,7 @@ function chPlatform() {
 function applyClientHints(sess) {
   try {
     const v = chMajor();
-    const brand = `"Chromium";v="${v}", "Google Chrome";v="${v}", "Not?A_Brand";v="99"`;
+    const brand = `"Not;A=Brand";v="8", "Chromium";v="${v}", "Google Chrome";v="${v}"`;
     const plat = `"${chPlatform()}"`;
     sess.webRequest.onBeforeSendHeaders((details, cb) => {
       const h = details.requestHeaders;
@@ -543,6 +543,29 @@ ipcMain.handle('auth:reset-confirm', (_e, d) => vakaAuthCall('reset-confirm', { 
 ipcMain.handle('auth:session', (_e, d) => vakaAuthCall('session', { token: d && d.token }));
 ipcMain.handle('auth:logout', (_e, d) => vakaAuthCall('logout', { token: d && d.token }));
 ipcMain.handle('auth:delete', (_e, d) => vakaAuthCall('delete', { token: d && d.token }));
+/* Session speglas krypterat i OS-nyckelringen (safeStorage) så inloggningen överlever
+ * även om skalets localStorage skulle tömmas. Bara token+profil, aldrig lösenord. */
+const SESSION_FILE = path.join(app.getPath('userData'), 'vaka-session.dat');
+ipcMain.handle('auth:remember', (_e, acc) => {
+  try {
+    if (!acc || !acc.token) return { ok: false };
+    const str = JSON.stringify(acc);
+    const out = (safeStorage && safeStorage.isEncryptionAvailable()) ? safeStorage.encryptString(str) : Buffer.from(str, 'utf8');
+    fs.writeFileSync(SESSION_FILE, out, { mode: 0o600 });
+    return { ok: true };
+  } catch { return { ok: false }; }
+});
+ipcMain.handle('auth:recall', () => {
+  try {
+    if (!fs.existsSync(SESSION_FILE)) return { ok: false };
+    const blob = fs.readFileSync(SESSION_FILE);
+    let str; try { str = (safeStorage && safeStorage.isEncryptionAvailable()) ? safeStorage.decryptString(blob) : blob.toString('utf8'); }
+    catch { str = blob.toString('utf8'); }
+    const acc = JSON.parse(str);
+    return (acc && acc.token) ? { ok: true, account: acc } : { ok: false };
+  } catch { return { ok: false }; }
+});
+ipcMain.handle('auth:forget', () => { try { if (fs.existsSync(SESSION_FILE)) fs.unlinkSync(SESSION_FILE); } catch {} return { ok: true }; });
 /* Prowl Socialt: profil (användarnamn+bild), vänner, chatt. */
 async function socialCall(pathname, body) {
   try {
@@ -630,7 +653,8 @@ async function restoreAccountCookies(key) {
     } catch {}
   }
 }
-async function clearWebSession() { try { await session.defaultSession.clearStorageData(); } catch {} }
+// Rensar BARA webb-cookies (Google m.fl.) — ALDRIG localStorage, där skalets Prowl-inloggning bor.
+async function clearWebSession() { try { await session.defaultSession.clearStorageData({ storages: ['cookies'] }); } catch {} }
 
 // Engangsstadning (0.3.50): versioner <=0.3.48 kunde binda Googles icke-Secure auth-cookies
 // (SID/HSID/APISID) till fel source-scheme (http/port 80) vid konto-aterstallning -> Google
@@ -665,15 +689,26 @@ function migratePwLegacy(key) {   // första inloggningen: flytta ev. gamla (ick
   try { if (!fs.existsSync(pwFileFor(key)) && fs.existsSync(PW_FILE)) { fs.mkdirSync(PW_DIR, { recursive: true }); fs.copyFileSync(PW_FILE, pwFileFor(key)); } } catch {}
 }
 // Sätt inloggat konto UTAN att röra webbsessionen (vid uppstart — sessionen ligger redan kvar på disk)
+// Uppstart: sätt kontonyckel utan att röra webbsessionen (cookies ligger redan på disk för rätt konto).
 ipcMain.handle('session:setkey', (_e, d) => { currentAcctKey = (d && d.key) || null; if (currentAcctKey) migratePwLegacy(currentAcctKey); return { ok: true }; });
-// Inloggning: sätt kontonyckel (lösenordsvalvet). Rör ALDRIG webbsessionen — cookies (Google m.fl.) ska överleva.
+// Inloggning / kontobyte: spara ev. UTGÅENDE kontots cookies, rensa webbsessionen, återställ det NYA kontots cookies.
+// → varje konto (förälder/barn) får sina EGNA webb-cookies, isolerade från varandra.
 ipcMain.handle('session:login', async (_e, d) => {
-  const key = d && d.key; currentAcctKey = key || null;
-  if (key) migratePwLegacy(key);
+  const key = d && d.key;
+  if (currentAcctKey && currentAcctKey !== key) { try { await saveAccountCookies(currentAcctKey); } catch {} }
+  currentAcctKey = key || null;
+  if (key) {
+    migratePwLegacy(key);
+    try { await clearWebSession(); } catch {}          // börja rent
+    try { await restoreAccountCookies(key); } catch {} // lägg tillbaka just det här kontots cookies
+  }
   return { ok: true };
 });
-// Utloggning ur Prowl-kontot: lås lösenordsvalvet, men behåll webbsessionen (man förblir inloggad i Google m.fl.).
+// Utloggning: spara kontots cookies, rensa sedan webbsessionen (utloggad ur Google m.fl. — inget ligger kvar).
 ipcMain.handle('session:logout', async (_e, d) => {
+  const key = (d && d.key) || currentAcctKey;
+  if (key) { try { await saveAccountCookies(key); } catch {} }
+  try { await clearWebSession(); } catch {}
   currentAcctKey = null;
   return { ok: true };
 });
@@ -1332,6 +1367,10 @@ function createWindow(incognito) {
   win.on('resize', () => sendTo(ctx, 'window-resized'));
   win.on('maximize', () => sendTo(ctx, 'win-maximized', true));
   win.on('unmaximize', () => sendTo(ctx, 'win-maximized', false));
+  // Startades Prowl med en länk (t.ex. som standardwebbläsare)? Öppna den när skalet laddat.
+  win.webContents.once('did-finish-load', () => {
+    if (pendingUrl && !incognito) { sendTo(ctx, 'open-new-tab', pendingUrl); pendingUrl = null; }
+  });
   win.on('enter-full-screen', () => applyBounds(ctx));   // räkna om vy-bounds när övergången är klar
   win.on('blur', () => { ctx._blurAt = Date.now(); });
   // Electron på Wayland ritar fönsterram och skugga själv (CSD). När fönstret
@@ -1392,10 +1431,125 @@ function createWindow(incognito) {
   return win;
 }
 
+/* ── Standardwebbläsare ──
+   Registrerar Prowl som hanterare för http/https så att länkar från andra
+   program (mejl, chatt, PDF:er) öppnas här. Linux styrs av en .desktop-fil +
+   xdg-settings; Windows 10/11 tillåter inte att program sätter sig själva som
+   standard, så där öppnas systemets val med Prowl registrerad som alternativ. */
+const DESKTOP_ID = 'prowl.desktop';
+
+function urlFromArgv(argv) {
+  return (argv || []).find((s) => /^https?:\/\//i.test(String(s))) || null;
+}
+let pendingUrl = urlFromArgv(process.argv);
+
+// Öppna en länk som kom utifrån (OS:et) i en ny flik i ett vanligt fönster.
+function openExternalLink(url) {
+  if (!/^https?:\/\//i.test(String(url))) return;
+  const ctx = [...wins.values()].find((c) => !c.incognito) || [...wins.values()][0];
+  if (!ctx) { pendingUrl = url; return; }
+  if (ctx.win.isMinimized()) ctx.win.restore();
+  ctx.win.focus();
+  sendTo(ctx, 'open-new-tab', url);
+}
+
+function xdg(args) {
+  return new Promise((res) => {
+    try { execFile(args[0], args.slice(1), (err, out) => res(err ? null : String(out || '').trim())); }
+    catch { res(null); }
+  });
+}
+
+function desktopEntry(icon) {
+  // Föredra installerarens wrapper ~/.local/bin/vaka (skickar --no-sandbox och
+  // överlever uppdateringar). AppImage: peka på .AppImage-filen (mount-sökvägen
+  // försvinner vid avslut). OBS: inga citattecken runt sökvägen — xdg-settings
+  // parser av Exec tål dem inte.
+  const wrapper = path.join(app.getPath('home'), '.local', 'bin', 'prowl');
+  const exec = fs.existsSync(wrapper) ? wrapper
+    : process.env.APPIMAGE ? `${process.env.APPIMAGE} --no-sandbox`
+    : app.isPackaged ? process.execPath
+    : `${process.execPath} ${__dirname} --no-sandbox`;
+  return [
+    '[Desktop Entry]',
+    'Name=Prowl',
+    'GenericName=Webbläsare',
+    'Comment=Webbläsaren för bug bounty-jägare',
+    `Exec=${exec} %U`,
+    `Icon=${icon}`,
+    'Type=Application',
+    'Terminal=false',
+    'StartupNotify=true',
+    'Categories=Network;WebBrowser;',
+    'MimeType=text/html;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;',
+    'StartupWMClass=Prowl',
+  ].join('\n') + '\n';
+}
+
+async function setDefaultBrowserLinux() {
+  const home = app.getPath('home');
+  const appsDir = path.join(home, '.local', 'share', 'applications');
+  let icon = path.join(__dirname, 'build', 'icon.png');
+  try {
+    const iconDir = path.join(home, '.local', 'share', 'icons');
+    fs.mkdirSync(iconDir, { recursive: true });
+    const dst = path.join(iconDir, 'prowl.png');
+    fs.copyFileSync(icon, dst); icon = dst;
+  } catch {}
+  fs.mkdirSync(appsDir, { recursive: true });
+  fs.writeFileSync(path.join(appsDir, DESKTOP_ID), desktopEntry(icon));
+  await xdg(['update-desktop-database', appsDir]);
+  await xdg(['xdg-settings', 'set', 'default-web-browser', DESKTOP_ID]);
+  // xdg-settings räcker inte på alla skrivbord — sätt mime-defaulterna direkt också.
+  await xdg(['xdg-mime', 'default', DESKTOP_ID, 'x-scheme-handler/http', 'x-scheme-handler/https', 'text/html']);
+  return isDefaultBrowserLinux();
+}
+
+async function isDefaultBrowserLinux() {
+  if ((await xdg(['xdg-settings', 'get', 'default-web-browser'])) === DESKTOP_ID) return true;
+  return (await xdg(['xdg-mime', 'query', 'default', 'x-scheme-handler/http'])) === DESKTOP_ID;
+}
+
+function registerProtocolClient() {
+  for (const p of ['http', 'https']) {
+    if (app.isPackaged) app.setAsDefaultProtocolClient(p);
+    else app.setAsDefaultProtocolClient(p, process.execPath, [__dirname, '--no-sandbox']);
+  }
+}
+
+ipcMain.handle('defaultbrowser:state', async () => {
+  try {
+    if (process.platform === 'linux') {
+      return { default: await isDefaultBrowserLinux() };
+    }
+    return { default: app.isDefaultProtocolClient('http') && app.isDefaultProtocolClient('https') };
+  } catch { return { default: false }; }
+});
+
+ipcMain.handle('defaultbrowser:set', async () => {
+  try {
+    if (process.platform === 'linux') {
+      const ok = await setDefaultBrowserLinux();
+      return { ok };
+    }
+    registerProtocolClient();
+    if (process.platform === 'win32' && !app.isDefaultProtocolClient('http')) {
+      shell.openExternal('ms-settings:defaultapps');
+      return { ok: false, manual: true };
+    }
+    return { ok: app.isDefaultProtocolClient('http') };
+  } catch { return { ok: false }; }
+});
+
+// macOS skickar länkar hit i stället för via argv.
+app.on('open-url', (e, url) => { e.preventDefault(); openExternalLink(url); });
+
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on('second-instance', () => {
+  app.on('second-instance', (_e, argv) => {
+    const url = urlFromArgv(argv);
+    if (url) { openExternalLink(url); return; }
     const all = BrowserWindow.getAllWindows();
     if (all.length) { const w = all[all.length - 1]; if (w.isMinimized()) w.restore(); w.focus(); }
   });
